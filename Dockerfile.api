@@ -21,6 +21,7 @@ COPY --from=builder /opt/venv /opt/venv
 WORKDIR /app
 
 COPY api/ api/
+COPY models/ models/
 COPY worker/ worker/
 
 CMD ["uvicorn", "api.routes:api", "--host", "0.0.0.0", "--port", "4789"]

@@ -9,6 +9,7 @@ worker = Celery(
     broker=os.getenv('CELERY_BROKER_URL'),
     include=[
         'worker.tasks',
+        'worker.pred',
     ]
 )
 

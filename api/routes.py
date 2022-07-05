@@ -1,4 +1,5 @@
 from worker.tasks import add, mul
+from worker.pred import predict
 from celery.result import AsyncResult
 
 from fastapi import FastAPI
@@ -25,6 +26,15 @@ async def schedule_add(model_input: Inputs):
 @api.post('/mul', response_model=TaskOutput, status_code=200)
 async def schedule_add(model_input: Inputs):
     task = mul.delay(model_input.x, model_input.y)
+    return TaskOutput(
+        task_id=str(task), 
+        status=task.status
+    )
+
+
+@api.post('/pred', response_model=TaskOutput, status_code=200)
+async def schedule_prediction(model_input: PredictionInput):
+    task = predict.delay(model_input.x)
     return TaskOutput(
         task_id=str(task), 
         status=task.status

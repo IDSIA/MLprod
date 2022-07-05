@@ -1,6 +1,10 @@
 from pydantic import BaseModel
 
 
+class PredictionInput(BaseModel):
+    x: float
+
+
 class Inputs(BaseModel):
     x: float
     y: float
