@@ -23,7 +23,7 @@ services:
     image: cas.mlp.worker
     build:
       context: .
-      dockerfile: ./Dockerfile.worker
+      dockerfile: Dockerfile.worker
     environment:
       - CELERY_BACKEND_URL=${CELERY_BACKEND_URL}
       - CELERY_BROKER_URL=${CELERY_BROKER_URL}
@@ -35,7 +35,7 @@ services:
     image: cas.mlp.api
     build:
       context: .
-      dockerfile: ./Dockerfile.api
+      dockerfile: Dockerfile.api
     environment:
       - CELERY_BACKEND_URL=${CELERY_BACKEND_URL}
       - CELERY_BROKER_URL=${CELERY_BROKER_URL}

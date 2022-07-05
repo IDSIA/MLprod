@@ -13,11 +13,13 @@ RUN pip install --upgrade pip && pip install --no-cache-dir -r /requirements.txt
 
 # Installation stage
 FROM python:3.10-slim-buster AS base
+ENV PATH="/opt/venv/bin:${PATH}"
 
 # Copy built environment to base
 COPY --from=builder /opt/venv /opt/venv
-ENV PATH="/opt/venv/bin:${PATH}"
 
-COPY worker.py .
+WORKDIR /app
 
-CMD ["celery", "-A", "worker", "worker", "-l", "INFO"]
+COPY worker/ worker/
+
+CMD ["celery", "-A", "worker.celery", "worker", "-l", "INFO"]

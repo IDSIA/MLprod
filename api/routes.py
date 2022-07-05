@@ -1,24 +1,9 @@
-from worker import add, mul
+from worker.tasks import add, mul
 from celery.result import AsyncResult
 
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
-
-
-class Inputs(BaseModel):
-    x: float
-    y: float
-
-
-class TaskOutput(BaseModel):
-    task_id: str
-    status : str
-
-
-class TaskResult(TaskOutput):
-    y: float
-
+from api.models import *
 
 api = FastAPI()
 
