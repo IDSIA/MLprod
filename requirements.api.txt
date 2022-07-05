@@ -1,3 +1,4 @@
 celery
 fastapi
+redis
 uvicorn

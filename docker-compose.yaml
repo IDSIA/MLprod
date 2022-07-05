@@ -50,15 +50,15 @@ services:
       - "traefik.http.routers.mlpapi.entrypoints=web"
       - "traefik.http.services.mlpapi.loadbalancer.server.port=4789"
 
-  grafana:
-    image: grafana/grafana-oss
-    ports: 
-      - 3000:3000
-    networks:
-      - www
-      - mlpnet
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.mlpgrafana.rule=Host(`grafana.${DOMAIN}`)"
-      - "traefik.http.routers.mlpgrafana.entrypoints=web"
-      - "traefik.http.services.mlpgrafana.loadbalancer.server.port=3000"
+  # grafana:
+  #   image: grafana/grafana-oss
+  #   ports: 
+  #     - 3000:3000
+  #   networks:
+  #     - www
+  #     - mlpnet
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.mlpgrafana.rule=Host(`grafana.${DOMAIN}`)"
+  #     - "traefik.http.routers.mlpgrafana.entrypoints=web"
+  #     - "traefik.http.services.mlpgrafana.loadbalancer.server.port=3000"
