@@ -1,22 +1,24 @@
 # Build stage
 FROM python:3.10 AS builder
 
-# Create installation folder
-RUN mkdir /install
-# Set it as current installation folder
-WORKDIR /install
+# We will install using a virtual env
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:${PATH}"
 
 # Copy list of required packages
 COPY requirements.api.txt /requirements.txt
 
 # Install packages using pip
-RUN pip install --upgrade pip && pip install --no-cache-dir --target=/install -r /requirements.txt
+RUN pip install --upgrade pip && pip install --no-cache-dir -r /requirements.txt
 
 # Installation stage
-FROM python:3.10-slim-buster AS base
+FROM python:3.10-slim AS base
+ENV PATH="/opt/venv/bin:${PATH}"
 
 # Copy built environment to base
-COPY --from=builder /install /usr/local/lib/python3.7/site-packages
-COPY api.py /api.py
+COPY --from=builder /opt/venv /opt/venv
 
-CMD ['uvicorn', 'api:api', '--host', '0.0.0.0', '--port', '4789']
+COPY api.py .
+COPY worker.py .
+
+CMD ["uvicorn", "api:api", "--host", "0.0.0.0", "--port", "4789"]

@@ -1,6 +1,13 @@
 from celery import Celery
 
-worker = Celery('tasks', broker='pyamqp://rabbitmq/', backend='redis://redis/')
+import os
+
+
+worker = Celery(
+    'tasks',
+    backend=os.getenv("CELERY_BACKEND_URL"),
+    broker=os.getenv("CELERY_BROKER_URL"),
+)
 
 worker.conf.update(
     result_expires=3600,
@@ -13,3 +20,6 @@ def add(x, y):
 @worker.task
 def mul(x, y):
     return x * y
+
+if __name__ == '__main__':
+    worker.start()
