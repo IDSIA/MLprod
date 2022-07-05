@@ -19,6 +19,21 @@ services:
     networks:
       - mlpnet
 
+  database:
+    image: postgres
+    environment:
+      - POSTGRES_USER=${DATABASE_USER}
+      - POSTGRES_PASSWORD=${DATABASE_PASS}
+      - POSTGRES_DB=${DATABASE_SCHEMA}
+    # ports: 5432
+    networks:
+      - mlpnet
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.monitordb.rule=Host(`monitordb.${DOMAIN}`)"
+      - "traefik.http.routers.monitordb.entrypoints=web"
+      - "traefik.http.services.monitordb.loadbalancer.server.port=5432"
+
   worker:
     image: cas.mlp.worker
     build:
@@ -39,6 +54,7 @@ services:
     environment:
       - CELERY_BACKEND_URL=${CELERY_BACKEND_URL}
       - CELERY_BROKER_URL=${CELERY_BROKER_URL}
+      - DATABASE_URL=${DATABASE_URL}
     ports:
       - 4789:4789
     networks:
@@ -50,15 +66,15 @@ services:
       - "traefik.http.routers.mlpapi.entrypoints=web"
       - "traefik.http.services.mlpapi.loadbalancer.server.port=4789"
 
-  # grafana:
-  #   image: grafana/grafana-oss
-  #   ports: 
-  #     - 3000:3000
-  #   networks:
-  #     - www
-  #     - mlpnet
-  #   labels:
-  #     - "traefik.enable=true"
-  #     - "traefik.http.routers.mlpgrafana.rule=Host(`grafana.${DOMAIN}`)"
-  #     - "traefik.http.routers.mlpgrafana.entrypoints=web"
-  #     - "traefik.http.services.mlpgrafana.loadbalancer.server.port=3000"
+  grafana:
+    image: grafana/grafana-oss
+    ports: 
+      - 3000:3000
+    networks:
+      - www
+      - mlpnet
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.mlpgrafana.rule=Host(`grafana.${DOMAIN}`)"
+      - "traefik.http.routers.mlpgrafana.entrypoints=web"
+      - "traefik.http.services.mlpgrafana.loadbalancer.server.port=3000"
