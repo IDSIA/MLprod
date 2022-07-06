@@ -1,21 +1,33 @@
-from worker.tasks import add, mul
-from worker.pred import predict
 from celery.result import AsyncResult
+from fastapi import FastAPI, HTTPException, Depends
+from sqlalchemy.orm import Session
 
-from fastapi import FastAPI
-from fastapi.responses import JSONResponse
-from fastapi_sqlalchemy import DBSessionMiddleware, db 
+from api.db.database import SessionLocal
+from api.db import crud, schemas, startup
 
-from api.models.requests import Inputs, PredictionInput, TaskOutput, TaskResult
-from api.models.monitor import Prediction as ModelPrediction
-from api.models.schema import Prediction
+from worker.pred import predict
 
-import os
+from datetime import datetime
 
 
 api = FastAPI()
 
-api.add_middleware(DBSessionMiddleware, db_url=os.environ.get('DATABASE_URL'))
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+@api.on_event('startup')
+async def populate_database():
+    try:
+        db = SessionLocal()
+        startup.init_content(db)
+    finally:
+        db.close()
 
 
 @api.get("/")
@@ -23,70 +35,43 @@ def root():
     return 'Hi! 😀'
 
 
-@api.post('/add', response_model=TaskOutput, status_code=200)
-async def schedule_add(model_input: Inputs):
-    task = add.delay(model_input.x, model_input.y)
-    return TaskOutput(
-        task_id=str(task), 
-        status=task.status
+@api.post('/pred', response_model=schemas.Prediction)
+async def schedule_prediction(input_x: float, db: Session = Depends(get_db)):
+    task = predict.delay(input_x)
+    
+    prediction = schemas.PredictionCreate(
+        task_id=str(task),
+        x=schemas.PredictionCreate,
+        status=task.status,
+        time_post=datetime.now()
     )
 
-
-@api.post('/mul', response_model=TaskOutput, status_code=200)
-async def schedule_add(model_input: Inputs):
-    task = mul.delay(model_input.x, model_input.y)
-    return TaskOutput(
-        task_id=str(task), 
-        status=task.status
-    )
+    return crud.create_prediction(db, prediction)
 
 
-@api.post('/pred', response_model=TaskOutput, status_code=200)
-async def schedule_prediction(model_input: PredictionInput):
-    task = predict.delay(model_input.x)
-    task_id, status = str(task), task.status
-
-    db_pred = ModelPrediction(task_id=task_id, x=model_input.x, y=None, status=status)
-    db.session.add(db_pred)
-    db.session.commit()
-
-    return TaskOutput(
-        task_id=task_id, 
-        status=status
-    )
-
-
-@api.get('/result/{task_id}', response_model=TaskResult, status_code=200)
-async def get_results(task_id):
+@api.get('/result/{task_id}', response_model=schemas.Prediction)
+async def get_results(task_id: str, db: Session = Depends(get_db)):
     task = AsyncResult(task_id)
     task_id, status = str(task), task.status
 
-    db_pred = db.session.query(ModelPrediction).filter(ModelPrediction.task_id == task_id)
+    db_pred = crud.get_prediction(db, task_id)
+
+    if db_pred is None:
+        raise HTTPException(status_code=404, detail='Task not found')
+
     db_pred.status = status
 
     if task.failed():
-        db.session.add(db_pred)
-        db.session.commit()
+        crud.update_prediction(db, db_pred)
 
-        return JSONResponse(status_code=500, content=TaskOutput(
-            task_id=str(task), 
-            status=status
-        ))
+        raise HTTPException(status_code=500, detail='Task failed')
 
     if not task.ready():
-        return JSONResponse(status_code=200, content=TaskOutput(
-            task_id=str(task), 
-            status=status
-        ))
+        return db_pred
     
     y = task.get()
 
     db_pred.y = y
-    db.session.add(db_pred)
-    db.session.commit()
+    db_pred.time_get = datetime.now()
 
-    return TaskResult(
-        task_id=task_id, 
-        status=status,
-        y=y
-    )
+    return crud.update_prediction(db, db_pred)

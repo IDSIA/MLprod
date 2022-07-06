@@ -25,9 +25,11 @@ services:
       - POSTGRES_USER=${DATABASE_USER}
       - POSTGRES_PASSWORD=${DATABASE_PASS}
       - POSTGRES_DB=${DATABASE_SCHEMA}
-    # ports: 5432
     networks:
       - mlpnet
+      - www
+    ports:
+      - 15432:5432
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.monitordb.rule=Host(`monitordb.${DOMAIN}`)"
@@ -54,7 +56,7 @@ services:
     environment:
       - CELERY_BACKEND_URL=${CELERY_BACKEND_URL}
       - CELERY_BROKER_URL=${CELERY_BROKER_URL}
-      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_URL=postgresql://${DATABASE_USER}:${DATABASE_PASS}@${DATABASE_HOST}/${DATABASE_SCHEMA}
     ports:
       - 4789:4789
     networks:
