@@ -5,15 +5,7 @@ class PredictionInput(BaseModel):
     x: float
 
 
-class Inputs(BaseModel):
-    x: float
-    y: float
-
-
-class TaskOutput(BaseModel):
+class PredictionOutput(BaseModel):
     task_id: str
     status : str
-
-
-class TaskResult(TaskOutput):
-    y: float
+    y: float | None

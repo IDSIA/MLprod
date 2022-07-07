@@ -18,17 +18,15 @@ def create_prediction(db: Session, pred: schemas.PredictionCreate) -> models.Pre
     )
     db.add(db_pred)
     db.commit()
-    db.refresh()
+    db.refresh(db_pred)
     return db_pred
 
 
-def update_prediction(db: Session, pred: schemas.Prediction):
-    db_pred = get_prediction(pred.task_id)
+def update_prediction(db: Session, pred: schemas.Prediction) -> models.Prediction:
+    db_pred = get_prediction(db, pred.task_id)
 
-    db_pred.update({
-        db_pred.time_get: pred.time_get,
-        db_pred.status: pred.status
-    })
+    db_pred.time_get = pred.time_get
+    db_pred.status = pred.status
     db.commit()
-    db.refresh()
+    db.refresh(db_pred)
     return db_pred
