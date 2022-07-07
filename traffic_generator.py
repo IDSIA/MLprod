@@ -15,14 +15,14 @@ DOMAIN = os.getenv('DOMAIN')
 def setup_arguments():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--seed', help='Use fixed seed', default=None, type=int)
-    parser.add_argument('-n', help='Number of requests to do', default=0, type=int)
+    parser.add_argument('--seed', help='Set fixed seed', default=None, type=int)
+    parser.add_argument('-n', help='Number of requests to do, 0 means infinite', default=None, type=int)
     parser.add_argument('--no-sleep', help='If set, no sleeps are used', default=False, action='store_true')
 
     return parser.parse_args()
 
 
-def sleepy(time, flag):
+def sleepy(time:int, flag:bool=True):
     if flag:
         logging.info(f'Sleeping for {time}')
         sleep(time)
@@ -36,15 +36,9 @@ if __name__ == '__main__':
 
     args = setup_arguments()
 
-    SEED = args.seed
-    N = args.n
+    r = np.random.default_rng(args.seed)
 
-    if SEED is None:
-        r = np.random.default_rng()
-    else:
-        r = np.random.default_rng(SEED)
-
-    n = N
+    n = 1 if args.n is None else args.n
     while n > 0:
         X = r.uniform(-10, 10)
 
@@ -76,5 +70,5 @@ if __name__ == '__main__':
         logging.info(f'Task id={tid} Y={y}')
         sleepy(T2, not args.no_sleep)
 
-        if N > 0:
+        if args.n is not None:
             n -= 1
