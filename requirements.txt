@@ -1,2 +1,4 @@
 requests
 python-dotenv
+matplotlib
+seaborn

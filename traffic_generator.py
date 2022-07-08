@@ -54,6 +54,9 @@ def generate_request_data(
     range_max: float=100.0,
     nights_min: int=1,
     nights_max: int=14,
+    start_date: np.datetime64='2022-06-01',
+    start_date_tolerance_min: int=0,
+    start_date_tolerance_max: int=30,
     spa_thr: float=.5,
     pool_thr: float=.5,
     pet_friendly_thr: float=.5,
@@ -66,15 +69,16 @@ def generate_request_data(
     and start the inferences on the possible 
     """
     # TODO: use different generator to have different skewed distributions
-    people = r.integers(people_min, people_max, type='int'),
-    ages = r.integers(age_min, age_max, people, type='int').tolist()
-    children = any(ages < minor_age)
+    people = r.integers(people_min, people_max)
+    ages = r.integers(age_min, age_max, people).tolist()
+    children = any([age < minor_age for age in ages])
 
-    budget = r.uniform(budget_min, budget_max, type='float')
+    budget = r.uniform(budget_min, budget_max)
 
     lat, lon = r.choice(LOCATIONS)
     ran = r.uniform(range_min, range_max)
-    nights = r.integers(nights_min, nights_max, type='int')
+    nights = r.integers(nights_min, nights_max)
+    time_arr = str(np.datetime64(start_date) + r.integers(start_date_tolerance_min, start_date_tolerance_max))
     
     spa = r.uniform() > spa_thr
     pool = r.uniform() > pool_thr
@@ -90,8 +94,8 @@ def generate_request_data(
         budget=budget,
         dst_latitude=lat,
         dst_longitue=lon,
-        dst_range=range,
-        time_arrival=ran,
+        dst_range=ran,
+        time_arrival=time_arr,
         nights=nights,
         spa=spa,
         pool=pool,
