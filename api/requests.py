@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from datetime import datetime
 
 
 class PredictionInput(BaseModel):
@@ -13,3 +14,20 @@ class PredictionOutput(BaseModel):
     task_id: str
     status : str
     y: float | None
+
+class RequestData(BaseModel):
+    people_num: int
+    people_age: list[int] # for each people
+    children: int
+    budget: float
+    dst_latitude: float
+    dst_longitue: float
+    dst_range: float # km
+    time_arrival: datetime
+    nights: int
+    spa: bool
+    pool: bool
+    pet_friendly: bool
+    lakes: bool
+    mountains: bool
+    sport: bool
