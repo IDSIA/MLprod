@@ -1,4 +1,7 @@
-from sqlalchemy import Column, String, Float, DateTime, Integer
+from cgi import print_arguments
+from email.policy import default
+from subprocess import IDLE_PRIORITY_CLASS
+from sqlalchemy import Column, String, Float, DateTime, Integer, Boolean
 from sqlalchemy.sql.functions import now
 
 from api.db.database import Base
@@ -13,6 +16,59 @@ class Prediction(Base):
     x = Column(Float, default=None)
     y = Column(Float, default=None)
     status = Column(String, default='')
+
+# ---- Dataset tables ----
+
+class Request:
+    __tablename__ = 'request'
+    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    creation_timestamp = Column(DateTime(timezone=True), server_default=now())
+    n_people = Column(Integer, nullable=False)
+    n_children = Column(Integer, nullable=False)
+    destination_lat = Column(Float, nullable=False)
+    destination_lon = Column(Float, nullable=False)
+    range = Column(Float, nullable=False)
+    age_avg = Column(Float, nullable=False)
+    age_sd = Column(Float, nullable=False)
+    age_min = Column(Float, nullable=False)
+    age_max = Column(Float, nullable=False)
+    budget = Column(Integer, nullable=False)
+    nights = Column(Integer, nullable=False)
+    arrival = Column(DateTime(timezone=True), nullable=False)
+    pool = Column(Boolean, default=False)
+    spa = Column(Boolean, default=False)
+    animals = Column(Boolean, default=False)
+    lake = Column(Boolean, default=False)
+    mountain = Column(Boolean, default=False)
+    sport = Column(Boolean, default=False)
+
+
+class POI:
+    __tablename__ = 'poi'
+    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    creation_timestamp = Column(DateTime(timezone=True), server_default=now())
+    poi_lat = Column(Float, nullable=False)
+    poi_lon = Column(Float, nullable=False)
+    children = Column(Boolean, nullable=False)
+    dinner = Column(Boolean, nullable=False)
+    breakfast = Column(Boolean, nullable=False)
+    lunch = Column(Boolean, nullable=False)
+    price = Column(Float, nullable=False)
+    pool = Column(Boolean, default=False)
+    spa = Column(Boolean, default=False)
+    animals = Column(Boolean, default=False)
+    lake = Column(Boolean, default=False)
+    mountain = Column(Boolean, default=False)
+    sport = Column(Boolean, default=False)
+
+
+class Dataset:
+    __tablename__ = 'dataset'
+    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    id_request = Column(Integer, nullable=False)
+    id_poi = Column(Integer, nullable=False)
+    label = Column(Integer, nullable=False)
+
 
 
 # ---- Monitoring and metrics tables ----
