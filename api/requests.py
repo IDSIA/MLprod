@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import date
 
 
 class PredictionInput(BaseModel):
@@ -23,7 +23,7 @@ class RequestData(BaseModel):
     dst_latitude: float
     dst_longitue: float
     dst_range: float # km
-    time_arrival: datetime
+    time_arrival: date
     nights: int
     spa: bool
     pool: bool
