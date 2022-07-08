@@ -1,11 +1,9 @@
 from sqlalchemy.orm import Session
 
-from datetime import datetime
-
-from . import models, schemas
+from . import schemas, tables
 
    
-def get_prediction(db: Session, task_id: str) -> models.Prediction:
+def get_prediction(db: Session, task_id: str) -> tables.Prediction:
     """Extract from the database the first Celery's task that match the given task_id.
 
     :param db:
@@ -13,10 +11,10 @@ def get_prediction(db: Session, task_id: str) -> models.Prediction:
     :param task_id:
       The id associated to the task.
     """
-    return db.query(models.Prediction).filter(models.Prediction.task_id == task_id).first()
+    return db.query(tables.Prediction).filter(tables.Prediction.task_id == task_id).first()
 
 
-def create_prediction(db: Session, pred: schemas.PredictionCreate) -> models.Prediction:
+def create_prediction(db: Session, pred: schemas.PredictionCreate) -> tables.Prediction:
     """Insert a new prediction in the database.
     
     :param db:
@@ -24,7 +22,7 @@ def create_prediction(db: Session, pred: schemas.PredictionCreate) -> models.Pre
     :param pred:
       Prediction object with the required fields
     """
-    db_pred = models.Prediction(
+    db_pred = tables.Prediction(
         task_id = pred.task_id,
         x = pred.x,
         status = pred.status,
@@ -35,7 +33,7 @@ def create_prediction(db: Session, pred: schemas.PredictionCreate) -> models.Pre
     return db_pred
 
 
-def update_prediction(db: Session, pred: schemas.Prediction) -> models.Prediction:
+def update_prediction(db: Session, pred: schemas.Prediction) -> tables.Prediction:
     """Upadte a new prediction with the results.
 
     :param db:
@@ -52,7 +50,7 @@ def update_prediction(db: Session, pred: schemas.Prediction) -> models.Predictio
     return db_pred
 
 
-def create_event(db: Session, event: str) -> models.Event:
+def create_event(db: Session, event: str) -> tables.Event:
     """Insert a new event into thte database.
     
     :param db:
@@ -61,7 +59,7 @@ def create_event(db: Session, event: str) -> models.Event:
       Event to be registered in the database. Technically, it is a string field,
       avoid typos and put single words.
     """
-    db_event = models.Event(
+    db_event = tables.Event(
         event=event
     )
     db.add(db_event)

@@ -1,4 +1,4 @@
-from api.db.models import Prediction, Event
+from api.db.tables import Prediction, Event
 from sqlalchemy.orm import Session
 
 
