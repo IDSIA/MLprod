@@ -19,7 +19,7 @@ class Prediction(Base):
 
 # ---- Dataset tables ----
 
-class Request:
+class Request(Base):
     __tablename__ = 'request'
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     creation_timestamp = Column(DateTime(timezone=True), server_default=now())
@@ -43,7 +43,7 @@ class Request:
     sport = Column(Boolean, default=False)
 
 
-class POI:
+class POI(Base):
     __tablename__ = 'poi'
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     creation_timestamp = Column(DateTime(timezone=True), server_default=now())
@@ -60,9 +60,13 @@ class POI:
     lake = Column(Boolean, default=False)
     mountain = Column(Boolean, default=False)
     sport = Column(Boolean, default=False)
+    family_rating = Column(Float, nullable=False)
+    outdoor_rating = Column(Float, nullable=False)
+    food_rating = Column(Float, nullable=False)
 
 
-class Dataset:
+
+class Dataset(Base):
     __tablename__ = 'dataset'
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     id_request = Column(Integer, nullable=False)

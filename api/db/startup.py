@@ -1,4 +1,4 @@
-from api.db.tables import Prediction, Event
+from api.db.tables import Prediction, Event, Request, POI, Dataset
 from sqlalchemy.orm import Session
 
 
@@ -12,3 +12,7 @@ def init_content(db: Session):
     Prediction.__table__.create(bind=engine, checkfirst=True)
     
     Event.__table__.create(bind=engine, checkfirst=True)
+
+    Request.__table__.create(bind=engine, checkfirst=True)
+    POI.__table__.create(bind=engine, checkfirst=True)
+    Dataset.__table__.create(bind=engine, checkfirst=True)
