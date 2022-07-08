@@ -8,11 +8,13 @@ import argparse
 import logging
 import os
 
+# Environment variables are controlled through a .env file
 load_dotenv()
 
-DOMAIN = os.getenv('DOMAIN')
+DOMAIN = os.getenv('DOMAIN', 'localhost')
 
 def setup_arguments():
+    """Defines the available input parameters"""
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--seed', help='Set fixed seed', default=None, type=int)
@@ -23,6 +25,14 @@ def setup_arguments():
 
 
 def sleepy(time:int, flag:bool=True):
+    """Add some delay in the system.
+    
+    :param time:
+      The amount of seconds to wait
+    
+    :param flag:
+      If True (default value), the sleepy is executed, otherwise no 
+    """
     if flag:
         logging.info(f'Sleeping for {time}')
         sleep(time)

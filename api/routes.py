@@ -13,6 +13,7 @@ api = FastAPI()
 
 
 def get_db():
+    """This is a generator for obtain the session to the database through SQLAlchemy."""
     db = SessionLocal()
     try:
         yield db
@@ -22,6 +23,11 @@ def get_db():
 
 @api.on_event('startup')
 async def populate_database():
+    """
+    All operations marked as ``on_event('startup')`` are executed when the APi are runned.
+
+    In this case, we initialize the database and populate it with some data.
+    """
     try:
         db = SessionLocal()
         startup.init_content(db)
@@ -31,11 +37,15 @@ async def populate_database():
 
 @api.get("/")
 def root():
+    """This is the endpoint for the home page."""
     return 'Hi! 😀'
 
 
 @api.post('/pred', response_model=requests.PredictionOutput)
 async def schedule_prediction(input_x: requests.PredictionInput, db: Session = Depends(get_db)):
+    """This is the endpoint used for schedule an inference."""
+    crud.create_event('prediction')
+
     x = float(input_x.x)
     task: AsyncResult = predict.delay(x)
     
@@ -55,6 +65,9 @@ async def schedule_prediction(input_x: requests.PredictionInput, db: Session = D
 
 @api.get('/result/{task_id}', response_model=requests.PredictionOutput)
 async def get_results(task_id: str, db: Session = Depends(get_db)):
+    """This si the endpoint to get the results of an inference."""
+    crud.create_event('results')
+    
     task = AsyncResult(task_id)
     task_id, status = task.task_id, task.status
 

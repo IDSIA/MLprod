@@ -47,6 +47,10 @@ services:
       - CELERY_QUEUE=${CELERY_QUEUE}
     networks:
       - mlpnet
+    depends_on:
+      - redis
+      - rabbitmq
+      - database
 
   api:
     image: cas.mlp.api
@@ -62,6 +66,9 @@ services:
     networks:
       - www
       - mlpnet
+    depends_on:
+      - worker
+      - database
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.mlpapi.rule=Host(`mlpapi.${DOMAIN}`)"
@@ -75,6 +82,8 @@ services:
     networks:
       - www
       - mlpnet
+    depends_on:
+      - database
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.mlpgrafana.rule=Host(`grafana.${DOMAIN}`)"
