@@ -1,8 +1,6 @@
-from cgi import print_arguments
-from email.policy import default
-from subprocess import IDLE_PRIORITY_CLASS
 from sqlalchemy import Column, String, Float, DateTime, Integer, Boolean
 from sqlalchemy.sql.functions import now
+from sqlalchemy.orm import relationship
 
 from api.db.database import Base
 
@@ -19,8 +17,8 @@ class Prediction(Base):
 
 # ---- Dataset tables ----
 
-class Request(Base):
-    __tablename__ = 'request'
+class User(Base):
+    __tablename__ = 'users'
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     creation_timestamp = Column(DateTime(timezone=True), server_default=now())
     n_people = Column(Integer, nullable=False)
@@ -43,16 +41,16 @@ class Request(Base):
     sport = Column(Boolean, default=False)
 
 
-class POI(Base):
-    __tablename__ = 'poi'
+class Location(Base):
+    __tablename__ = 'locations'
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     creation_timestamp = Column(DateTime(timezone=True), server_default=now())
-    poi_lat = Column(Float, nullable=False)
-    poi_lon = Column(Float, nullable=False)
+    lat = Column(Float, nullable=False)
+    lon = Column(Float, nullable=False)
     children = Column(Boolean, nullable=False)
-    dinner = Column(Boolean, nullable=False)
     breakfast = Column(Boolean, nullable=False)
     lunch = Column(Boolean, nullable=False)
+    dinner = Column(Boolean, nullable=False)
     price = Column(Float, nullable=False)
     pool = Column(Boolean, default=False)
     spa = Column(Boolean, default=False)
@@ -63,14 +61,16 @@ class POI(Base):
     family_rating = Column(Float, nullable=False)
     outdoor_rating = Column(Float, nullable=False)
     food_rating = Column(Float, nullable=False)
-
+    leisure_rating = Column(Float, nullable=False)
+    service_rating = Column(Float, nullable=False)
+    user_score = Column(Float, nullable=False)
 
 
 class Dataset(Base):
     __tablename__ = 'dataset'
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
-    id_request = Column(Integer, nullable=False)
-    id_poi = Column(Integer, nullable=False)
+    id_user = Column(Integer, nullable=False)
+    id_location = Column(Integer, nullable=False)
     label = Column(Integer, nullable=False)
 
 

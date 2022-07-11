@@ -98,3 +98,10 @@ async def get_results(task_id: str, db: Session = Depends(get_db)):
         status=db_pred.task_id,
         y = db_pred.y
     )
+
+@api.get('/post/{choice}')
+async def get_click(choice: str, db: Session = Depends(get_db)):
+    """This is the endpoint used to simulate a click on a choice.
+    A click will be registered as a label on the data"""
+    
+    return HTTPException(501, 'Not implemented')

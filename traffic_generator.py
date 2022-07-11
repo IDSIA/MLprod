@@ -4,8 +4,7 @@ import requests
 from time import sleep
 from dotenv import load_dotenv
 
-from api.requests import RequestData
-from datas.locations import LOCATIONS
+from datas.users import generate_user_data
 
 import argparse
 import logging
@@ -41,71 +40,6 @@ def sleepy(time:int, flag:bool=True):
         sleep(time)
 
 
-def generate_request_data(
-    r: np.random.Generator, 
-    people_min: int=1,
-    people_max: int=10,
-    age_min: int=0,
-    age_max: int=99,
-    minor_age: int=18,
-    budget_min: float=1000,
-    budget_max: float=10000,
-    range_min: float=0.0,
-    range_max: float=100.0,
-    nights_min: int=1,
-    nights_max: int=14,
-    start_date: np.datetime64='2022-06-01',
-    start_date_tolerance_min: int=0,
-    start_date_tolerance_max: int=30,
-    spa_thr: float=.5,
-    pool_thr: float=.5,
-    pet_friendly_thr: float=.5,
-    lakes_thr: float=.5,
-    mountains_thr: float=.5,
-    sport_thr: float=.5,
-) -> RequestData:
-    """This function will generate the input data in a synthtetic way. The objective
-    is to simulate possible requests from the users on the hypotetical web interface
-    and start the inferences on the possible 
-    """
-    # TODO: use different generator to have different skewed distributions
-    people = r.integers(people_min, people_max)
-    ages = r.integers(age_min, age_max, people).tolist()
-    children = any([age < minor_age for age in ages])
-
-    budget = r.uniform(budget_min, budget_max)
-
-    lat, lon = r.choice(LOCATIONS)
-    ran = r.uniform(range_min, range_max)
-    nights = r.integers(nights_min, nights_max)
-    time_arr = str(np.datetime64(start_date) + r.integers(start_date_tolerance_min, start_date_tolerance_max))
-    
-    spa = r.uniform() > spa_thr
-    pool = r.uniform() > pool_thr
-    pet_friendly = r.uniform() > pet_friendly_thr
-    lakes = r.uniform() > lakes_thr
-    mountains = r.uniform() > mountains_thr
-    sport = r.uniform() > sport_thr
-
-    return RequestData(
-        people_num=people,
-        people_age=ages,
-        children=children,
-        budget=budget,
-        dst_latitude=lat,
-        dst_longitue=lon,
-        dst_range=ran,
-        time_arrival=time_arr,
-        nights=nights,
-        spa=spa,
-        pool=pool,
-        pet_friendly=pet_friendly,
-        lakes=lakes,
-        mountains=mountains,
-        sport=sport,
-    )
-
-
 if __name__ == '__main__':
     logging.basicConfig(
         level=logging.INFO,
@@ -125,7 +59,7 @@ if __name__ == '__main__':
 
         # send new inference request ------------------------------
         url_post = f'http://mlpapi.{DOMAIN}:4789/pred'
-        data = generate_request_data(r)
+        data = generate_user_data(r)
 
         logging.info(f'Request X={X}')
 
@@ -150,6 +84,10 @@ if __name__ == '__main__':
         logging.info(f'Task id={tid} Y={y}')
         sleepy(T2, not args.no_sleep)
 
+        # ---------------------------------------------------------
+
+        # Register choice -----------------------------------------
+        # TODO
         # ---------------------------------------------------------
 
         # next request --------------------------------------------
