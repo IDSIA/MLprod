@@ -9,7 +9,8 @@ from datas.utils import sample_bool, sample_float
 def generate_location_data(
     r: np.random.Generator, 
     coordinates: tuple[float, float]= (0.0, 0.0),
-    location_distance: float=1, # this is in KM!
+    location_distance_min: float=1, # this is in KM!
+    location_distance_max: float=1, # this is in KM!
     threshold_child: float=0.5,
     threshold_breakfast: float=0.5,
     threshold_lunch: float=0.5,
@@ -47,7 +48,7 @@ def generate_location_data(
 
     # we can use polar-coordinate-conversion to compute a point in the given range
     angle = sample_float(r, 0, 2 * math.pi, a, b)
-    kms = sample_float(r, 0, math.sqrt(location_distance), a, b) 
+    kms = sample_float(r, location_distance_min, location_distance_max, a, b) 
     lat += kms * math.cos(angle)
     lon += kms * math.sin(angle)
 
