@@ -36,7 +36,7 @@ def generate_user_data(
 
     Act on paramters ``a`` and ``b`` for distribution skew.
     """
-    people = sample_int(r, people_min, people_max, a, b)
+    people = sample_int(r, people_min, people_max, a, b)[0]
     ages = sample_int(r, age_min, age_max, a, b, people)
 
     children = any(ages < minor_age)
@@ -46,9 +46,9 @@ def generate_user_data(
     lat, lon = sample_list(r, LOCATIONS, a, b)
     
     ran = sample_float(r, range_min, range_max, a, b)
-    nights = sample_int(r, nights_min, nights_max, a, b)
-    time_arr = str(np.datetime64(start_date) + sample_int(r, start_date_tolerance_min, start_date_tolerance_max, a,b))
-    
+    nights = sample_int(r, nights_min, nights_max, a, b)[0]
+    time_arr = str(np.datetime64(start_date) + sample_int(r, start_date_tolerance_min, start_date_tolerance_max, a,b)[0])
+
     spa = sample_bool(r,spa_thr, a, b)
     pool = sample_bool(r,pool_thr, a, b)
     pet_friendly = sample_bool(r, pet_friendly_thr, a, b)

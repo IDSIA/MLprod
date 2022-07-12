@@ -2,7 +2,7 @@ from typing import Any
 import numpy as np
 
 
-def sample_int(r: np.random.Generator, min_val: int, max_val: int, a: float, b: float, size: int=1) -> int | np.ndarray[Any, np.dtype[np.int64]]:
+def sample_int(r: np.random.Generator, min_val: int, max_val: int, a: float, b: float, size: int=1) -> np.ndarray[Any, np.dtype[np.int64]]:
     """Samples one or more integer from a beta distribution given two bounds.
 
     :param r:
@@ -22,8 +22,6 @@ def sample_int(r: np.random.Generator, min_val: int, max_val: int, a: float, b: 
     p = r.beta(a, b, n)
     p /= p.sum()
     c = r.choice(n, p=p, size=size) + min_val
-    if size == 1:
-        return c[0]
     return c
 
 
@@ -45,19 +43,20 @@ def sample_float(r: np.random.Generator, min_val: float, max_val: float, a: floa
 
 
 def sample_bool(r: np.random.Generator, threshold: float, a: float, b: float) -> bool:
-    """Samples one boolean from a beta distribution given a threshold.
+    """Samples one boolean from a beta distribution given a threshold. The 
+    threshold is the probability to have this boolean.
 
     :param r:
       Random number generator.
     :param threshold:
       Threshold used for sample, return a True when the generated internal 
-      value is above this threshold.
+      value is below this threshold.
     :param a:
       Parameter alpha for beta distirbution.
     :param b:
       Parameter beta for beta distirbution.
     """
-    return r.beta(a, b) > threshold
+    return r.beta(a, b) < threshold
 
 
 def sample_list(r: np.random.Generator, objects: list, a: float, b: float, size: int=1) -> Any:
