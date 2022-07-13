@@ -1,8 +1,10 @@
 celery
+datadog
 fastapi
 fastapi-sqlalchemy
 psycopg2-binary
 pydantic
 python-dotenv
 redis
+timing-asgi
 uvicorn

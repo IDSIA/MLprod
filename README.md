@@ -15,6 +15,8 @@ DATABASE_SCHEMA=mlpdb
 DATABASE_USER=mlp
 DATABASE_PASS=mlp
 DATABASE_HOST=database
+
+GRAFANA_ADMIN_PASS=grafana
 ```
 
 Then launch the docker through the docker compose:
