@@ -1,13 +1,23 @@
 # %%
 import numpy as np
 import pandas as pd
+
 from api.requests import LocationData
 
 from datas import generate_location_data, generate_user_data, LOCATIONS, UserLabeller
 
 r = np.random.default_rng(42)
 
+USER_CONFIG = 'config/user.tsv'
+LOC_CONFIG = 'config/location.tsv'
+
+#%%
+
+user_conf = pd.read_csv(USER_CONFIG, sep='\t')
+loc_conf = pd.read_csv(LOC_CONFIG, sep='\t')
+
 # %% -----------------------------------------------------------------------
+
 user_data = []
 
 # generic user

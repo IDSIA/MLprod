@@ -4,7 +4,22 @@ from api.requests import LocationData, UserData
 
 class UserLabeller:
 
-    def __init__(self, budget_tolerance: float = 0, facilities_tolerance: float = 0, family_tolerance: float= 1.0, weight_spa: float=1.0, weight_pool: float=1.0, weight_pet: float=1.0, weight_lake: float=1.0, weight_mouintains: float=1.0, weight_sport: float=1.0, weight_score_facilities: float=1.0, weight_score_envirnonment: float=1.0, weight_score_users: float=1.0) -> None:
+    def __init__(
+        self, 
+        budget_tolerance: float = 0, 
+        facilities_tolerance: float = 0, 
+        family_tolerance: float= 1.0, 
+        weight_spa: float=1.0, 
+        weight_pool: float=1.0, 
+        weight_pet: float=1.0, 
+        weight_lake: float=1.0, 
+        weight_mouintains: float=1.0, 
+        weight_sport: float=1.0, 
+        weight_score_facilities: float=1.0, 
+        weight_score_envirnonment: float=1.0, 
+        weight_score_users: float=1.0
+    ) -> None:
+
         """
         :param budget_tolerance:
           Percentage of over budget that can be considered acceptable.

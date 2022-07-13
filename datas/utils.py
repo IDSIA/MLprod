@@ -2,7 +2,7 @@ from typing import Any
 import numpy as np
 
 
-def sample_int(r: np.random.Generator, min_val: int, max_val: int, a: float, b: float, size: int=1) -> np.ndarray[Any, np.dtype[np.int64]]:
+def sample_int(r: np.random.Generator, min_val: int, max_val: int, size: int=1) -> np.ndarray[Any, np.dtype[np.int64]]:
     """Samples one or more integer from a beta distribution given two bounds.
 
     :param r:
@@ -18,14 +18,10 @@ def sample_int(r: np.random.Generator, min_val: int, max_val: int, a: float, b: 
     :param size:
       Number of samples to generate (if 1, an int is returned).
     """
-    n = max_val - min_val
-    p = r.beta(a, b, n)
-    p /= p.sum()
-    c = r.choice(n, p=p, size=size) + min_val
-    return c
+    return r.integers(low=min_val, high=max_val, size=size)
 
 
-def sample_float(r: np.random.Generator, min_val: float, max_val: float, a: float, b: float) -> float:
+def sample_float(r: np.random.Generator, min_val: float, max_val: float, size: int=1) -> float:
     """Samples one float from a beta distribution given two inclusive bounds.
 
     :param r:
@@ -39,10 +35,10 @@ def sample_float(r: np.random.Generator, min_val: float, max_val: float, a: floa
     :param b:
       Parameter beta for beta distirbution.
     """
-    return r.beta(a, b) * (max_val - min_val) + min_val
+    return r.uniform(low=min_val, high=max_val, size=size)
 
 
-def sample_bool(r: np.random.Generator, threshold: float, a: float, b: float) -> bool:
+def sample_bool(r: np.random.Generator, threshold: float) -> bool:
     """Samples one boolean from a beta distribution given a threshold. The 
     threshold is the probability to have this boolean.
 
@@ -56,7 +52,7 @@ def sample_bool(r: np.random.Generator, threshold: float, a: float, b: float) ->
     :param b:
       Parameter beta for beta distirbution.
     """
-    return r.beta(a, b) < threshold
+    return r.binomial(1, threshold, 1)[0]
 
 
 def sample_list(r: np.random.Generator, objects: list, a: float, b: float, size: int=1) -> Any:

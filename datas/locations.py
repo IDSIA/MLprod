@@ -38,6 +38,7 @@ def generate_location_data(
     a: float=1.0,
     b: float=1.0,
 ) -> LocationData:
+
     """This function will generate the location in a synthtetic way. The objective is
     create possible numeric descriptors for each location.
 
