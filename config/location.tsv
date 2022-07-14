@@ -1,0 +1,11 @@
+meta_comment	meta_n	threshold_child	threshold_breakfast	threshold_lunch	threshold_dinner	price_min	price_max	threshold_pool	threshold_spa	threshold_animals	threshold_lake	threshold_mountain	threshold_sport	family_min	family_max	outdoor_min	outdoor_max	food_min	food_max	leisure_min	leisure_max	service_min	service_max	score_min	score_max
+Zurich	10	0.5	0.5	0.5	0.5	50	1500	0.5	0.5	0.5	0.5	0.5	0.5	0	1	0	1	0	1	0	1	0	1	0	1
+Bern	10	0.5	0.5	0.5	0.5	50	1500	0.5	0.5	0.5	0.5	0.5	0.5	0	1	0	1	0	1	0	1	0	1	0	1
+Lausanne	10	0.5	0.5	0.5	0.5	50	1500	0.5	0.5	0.5	0.5	0.5	0.5	0	1	0	1	0	1	0	1	0	1	0	1
+Geneve	10	0.5	0.5	0.5	0.5	50	1500	0.5	0.5	0.5	0.5	0.5	0.5	0	1	0	1	0	1	0	1	0	1	0	1
+Coira	10	0.5	0.5	0.5	0.5	50	1500	0.5	0.5	0.5	0.5	0.5	0.5	0	1	0	1	0	1	0	1	0	1	0	1
+Lugano	10	0.5	0.5	0.5	0.5	50	1500	0.5	0.5	0.5	0.5	0.5	0.5	0	1	0	1	0	1	0	1	0	1	0	1
+Bellinzona	10	0.5	0.5	0.5	0.5	50	1500	0.5	0.5	0.5	0.5	0.5	0.5	0	1	0	1	0	1	0	1	0	1	0	1
+Locarno	10	0.5	0.5	0.5	0.5	50	1500	0.5	0.5	0.5	0.5	0.5	0.5	0	1	0	1	0	1	0	1	0	1	0	1
+Altdorf	10	0.5	0.5	0.5	0.5	50	1500	0.5	0.5	0.5	0.5	0.5	0.5	0	1	0	1	0	1	0	1	0	1	0	1
+Zermatt	10	0.5	0.5	0.5	0.5	50	1500	0.5	0.5	0.5	0.5	0.5	0.5	0	1	0	1	0	1	0	1	0	1	0	1

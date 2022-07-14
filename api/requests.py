@@ -32,8 +32,6 @@ class UserData(BaseModel):
 
 
 class LocationData(BaseModel):
-    lat: float
-    lon: float
     children: bool
     breakfast: bool
     lunch: bool

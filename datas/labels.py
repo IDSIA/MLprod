@@ -1,3 +1,5 @@
+from cProfile import label
+from site import USER_BASE
 import numpy as np
 
 from api.requests import LocationData, UserData
@@ -6,8 +8,8 @@ class UserLabeller:
 
     def __init__(
         self, 
-        budget_tolerance: float = 0, 
-        facilities_tolerance: float = 0, 
+        budget_tolerance: float = 0.0, 
+        facilities_tolerance: float = 0.0, 
         family_tolerance: float= 1.0, 
         weight_spa: float=1.0, 
         weight_pool: float=1.0, 
@@ -69,9 +71,9 @@ class UserLabeller:
         """
 
         # check for budget:
-        cost = user.nights * location.price
+        user_budget = user.budget + self.budget_tolerance * user.budget
 
-        if cost > user.budget + self.budget_tolerance * user.budget:
+        if location.price > user_budget:
             # over budget, reject
             return 0
 
@@ -98,7 +100,8 @@ class UserLabeller:
             facilities_score_desired += self.weight_sport
             facilities_score_achieved += user.sport == location.sport
 
-        if facilities_score_desired > 0 and facilities_score_achieved / facilities_score_desired < self.facilities_tolerance:
+        if facilities_score_desired > 0 and \
+            facilities_score_achieved / facilities_score_desired < self.facilities_tolerance:
             # not enough facilities
             return 0
 
@@ -123,7 +126,7 @@ class UserLabeller:
 
         return score
 
-    def __call__(self, r: np.random.Generator, user: UserData, locations: list[LocationData], a: float=1, b: float=1) -> int:
+    def __call__(self, r: np.random.Generator, user: UserData, locations: list[LocationData]) -> int:
         """
         This function will process a list of possible locations assigning them a
         score. Then a explotation/exploration mechanism choose which location has 
@@ -133,18 +136,24 @@ class UserLabeller:
         scores = np.array([self.score(user, loc) for loc in locations])
         labels = np.zeros(scores.shape)
 
+        n = scores.shape[0]
+        p = scores / scores.sum()
+
         if scores.sum() == 0:
             # no suitable locations
             return labels
+        
+        # "Seen" locations
+        c = r.choice(n, size=r.choice(n), p=p, replace=False)
+        labels[c] = 1
 
-        if r.beta(a, b) > 0.5:
+        # Choosen location
+        if r.uniform(0, 1) > 0.5:
             # exploit
-            labels[np.argmax(scores)] = 1
+            labels[np.argmax(scores)] = 2
         else:
             # explore
-            n = scores.shape[0]
-            p = scores / scores.sum()
             c = r.choice(n, p=p)
-            labels[c] = 1
+            labels[c] = 2
 
         return labels

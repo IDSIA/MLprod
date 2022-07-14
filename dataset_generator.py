@@ -2,19 +2,26 @@
 import numpy as np
 import pandas as pd
 
-from api.requests import LocationData
-
-from datas import generate_location_data, generate_user_data, LOCATIONS, UserLabeller
+from datas import generate_location_data, generate_user_data, UserLabeller
 
 r = np.random.default_rng(42)
 
 USER_CONFIG = 'config/user.tsv'
 LOC_CONFIG = 'config/location.tsv'
 
+DATASET_USER = 'dataset/dataset_users.tsv'
+DATASET_LOC = 'dataset/dataset_locations.tsv'
+DATASET_LABEL = 'dataset/dataset_labelled.tsv'
+
 #%%
 
+print(f"Loading {USER_CONFIG}... ", end="")
 user_conf = pd.read_csv(USER_CONFIG, sep='\t')
+print("Done")
+
+print(f"Loading {LOC_CONFIG}... ", end="")
 loc_conf = pd.read_csv(LOC_CONFIG, sep='\t')
+print("Done")
 
 #%%
 
@@ -40,6 +47,8 @@ for _, row in loc_conf.iterrows():
 
 # %% -----------------------------------------------------------------------
 
+print("Generating user data...", end="")
+
 user_data = []
 
 # generic user
@@ -49,44 +58,37 @@ for user in user_settings:
             generate_user_data(r, **user['settings'])
         )
 
-#%%
-
 df_user = pd.DataFrame([x.dict() for x in user_data])
-df_user.to_csv('dataset_users.tsv', index=False, header=True, sep='\t')
+df_user.to_csv(DATASET_USER, index=False, header=True, sep='\t')
+
+print("Done")
 
 # %% -----------------------------------------------------------------------
+
+print("Generating location data... ", end="")
+
 location_data = []
 
 # Zh area: business, lake, high variance between low and high cost
-
-for _ in range(100):
-    location_data.append(generate_location_data(r, 
-        coordinates=LOCATIONS[0],
-        location_distance_min=0,
-        location_distance_max=100,
-        threshold_breakfast=0.99,
-        threshold_lake=0.99,
-        price_min=50,
-        price_max=1000,
-        threshold_mountain=0.2,
-        threshold_sport=0.3,
-        leisure_min=0.5,
-        service_min=0.5,
-        score_min=0.3,
-        score_max=0.8,
-        a=1.0,
-        b=1.0,
-    ))
+for loc in loc_settings:
+    for _ in range(loc['qnt']):
+        location_data.append(
+            generate_location_data(r, **loc['settings'])
+        )
 
 # save all objects to a tab-separated value (TSV) file
 df_data = pd.DataFrame([x.dict() for x in location_data])
-df_data.to_csv('dataset_locations.tsv', index=False, header=True, sep='\t')
+df_data.to_csv(DATASET_LOC, index=False, header=True, sep='\t')
+
+print("Done")
 
 # %% -----------------------------------------------------------------------
+
+print("Labelling data... ", end="")
+
 ul = UserLabeller()
 
 ml_data = []
-
 users = r.choice(user_data, 100).tolist()
 
 for user in users:
@@ -99,6 +101,6 @@ for user in users:
         ml_data.append(d)
 
 df_ml = pd.DataFrame(ml_data)
-df_ml.to_csv('dataset_labelled.tsv', index=False, header=True, sep='\t')
+df_ml.to_csv(DATASET_LABEL, index=False, header=True, sep='\t')
 
-# %% -----------------------------------------------------------------------
+print("Done")
