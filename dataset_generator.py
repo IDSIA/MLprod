@@ -16,16 +16,40 @@ LOC_CONFIG = 'config/location.tsv'
 user_conf = pd.read_csv(USER_CONFIG, sep='\t')
 loc_conf = pd.read_csv(LOC_CONFIG, sep='\t')
 
+#%%
+
+# Convert pandas rows in dicts
+
+user_settings = []
+for _, row in user_conf.iterrows():
+    user_dict = {
+        'name': row['meta_comment'],
+        'qnt': row['meta_dist'],
+        'settings': row.iloc[2:].to_dict()
+    }
+    user_settings.append(user_dict)
+
+loc_settings = []
+for _, row in loc_conf.iterrows():
+    loc_dict = {
+        'name': row['meta_comment'],
+        'qnt': row['meta_n'],
+        'settings': row.iloc[2:].to_dict()
+    }
+    loc_settings.append(loc_dict)
+
 # %% -----------------------------------------------------------------------
 
 user_data = []
 
 # generic user
-for _ in range(10):
-    user_data.append(generate_user_data(r,
-        a=1.0, 
-        b=1.0
-    ))
+for user in user_settings:
+    for s in range(user['qnt']):
+        user_data.append(
+            generate_user_data(r, **user['settings'])
+        )
+
+#%%
 
 df_user = pd.DataFrame([x.dict() for x in user_data])
 df_user.to_csv('dataset_users.tsv', index=False, header=True, sep='\t')

@@ -21,9 +21,6 @@ class UserData(BaseModel):
     people_age: list[int] # for each people
     children: int
     budget: float
-    dest_lat: float
-    dest_lon: float
-    dst_range: float # km
     time_arrival: date
     nights: int
     spa: bool
