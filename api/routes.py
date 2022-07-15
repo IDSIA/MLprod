@@ -2,6 +2,9 @@ from celery.result import AsyncResult
 from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session
 
+import uvicorn
+
+from api.middleware.metrics import PrometheusMiddleware, metrics_route
 from api.db.database import SessionLocal
 from api.db import crud, schemas, startup
 from api import requests
@@ -10,6 +13,9 @@ from worker.pred import predict
 
 
 api = FastAPI()
+
+api.add_middleware(PrometheusMiddleware)
+api.add_route('/metrics', metrics_route)
 
 
 def get_db():
@@ -99,9 +105,14 @@ async def get_results(task_id: str, db: Session = Depends(get_db)):
         y = db_pred.y
     )
 
+
 @api.get('/post/{choice}')
 async def get_click(choice: str, db: Session = Depends(get_db)):
     """This is the endpoint used to simulate a click on a choice.
     A click will be registered as a label on the data"""
     
     return HTTPException(501, 'Not implemented')
+
+
+if __name__ == '__main__':
+    uvicorn.run(api)

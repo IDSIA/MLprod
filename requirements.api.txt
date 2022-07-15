@@ -1,6 +1,7 @@
 celery
 fastapi
 fastapi-sqlalchemy
+prometheus-client
 psycopg2-binary
 pydantic
 python-dotenv
