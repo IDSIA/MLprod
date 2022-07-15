@@ -1,21 +1,21 @@
 from celery.result import AsyncResult
 from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session
-from timing_asgi import TimingMiddleware
 
 import uvicorn
 
+from api.middleware.metrics import PrometheusMiddleware, metrics_route
 from api.db.database import SessionLocal
 from api.db import crud, schemas, startup
 from api import requests
 
-from api.middleware.metrics import Timings
 from worker.pred import predict
 
 
 api = FastAPI()
 
-api.add_middleware(TimingMiddleware, client=Timings())
+api.add_middleware(PrometheusMiddleware)
+api.add_route('/metrics', metrics_route)
 
 
 def get_db():

@@ -32,17 +32,6 @@ services:
       - "traefik.http.routers.mlprom.entrypoints=web"
       - "traefik.http.services.mlprom.loadbalancer.server.port=9090"
 
-  statsd:
-    image: prom/statsd-exporter
-    ports:
-     - 9125:9125
-     - 9102:9102
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.mlpstatsd.rule=Host(`mlpstatsd.${DOMAIN}`)"
-      - "traefik.http.routers.mlpstatsd.entrypoints=web"
-      - "traefik.http.services.mlpstatsd.loadbalancer.server.port=9102"
-
   database:
     image: postgres
     environment:
