@@ -136,24 +136,20 @@ class UserLabeller:
         scores = np.array([self.score(user, loc) for loc in locations])
         labels = np.zeros(scores.shape)
 
-        n = scores.shape[0]
-        p = scores / scores.sum()
-
         if scores.sum() == 0:
             # no suitable locations
             return labels
-        
-        # "Seen" locations
-        c = r.choice(n, size=r.choice(n), p=p, replace=False)
-        labels[c] = 1
+
+        n = scores.shape[0]
+        p = scores / scores.sum()
 
         # Choosen location
         if r.uniform(0, 1) > 0.5:
             # exploit
-            labels[np.argmax(scores)] = 2
+            labels[np.argmax(scores)] = 1
         else:
             # explore
             c = r.choice(n, p=p)
-            labels[c] = 2
+            labels[c] = 1
 
         return labels
