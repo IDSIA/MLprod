@@ -89,7 +89,7 @@ print("Labelling data... ", end="")
 ul = UserLabeller()
 
 ml_data = []
-users = r.choice(user_data, 100).tolist()
+users = r.choice(user_data, 1000).tolist()
 
 for user in users:
     locs = r.choice(location_data, 10).tolist()
