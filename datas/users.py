@@ -1,8 +1,7 @@
 import numpy as np
 from api.requests import UserData
 
-from datas.coordinates import LOCATIONS
-from datas.utils import sample_bool, sample_float, sample_int, sample_list
+from datas.utils import sample_bool, sample_float, sample_int
 
 
 def generate_user_data(

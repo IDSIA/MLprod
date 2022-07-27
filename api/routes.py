@@ -5,9 +5,10 @@ from sqlalchemy.orm import Session
 import uvicorn
 
 from api.middleware.metrics import PrometheusMiddleware, metrics_route
-from api.db.database import SessionLocal
-from api.db import crud, schemas, startup
 from api import requests
+
+from database.database import SessionLocal
+from database import crud, startup
 
 from worker.tasks.inference import inference
 
@@ -52,7 +53,7 @@ async def schedule_prediction(user_data: requests.UserData, db: Session = Depend
     """This is the endpoint used for schedule an inference."""
     crud.create_event(db, 'prediction')
     # TODO: maybe let celery task save and load data from the database
-    ud = crud.create_userData(db, user_data)
+    ud = crud.create_user_data(db, user_data.__dict__)
 
     # TODO: load all locations? Maybe filter them.
     task: AsyncResult = inference.delay(ud.id)

@@ -1,5 +1,5 @@
-from api.db.tables import Prediction, Event, User, Location, Dataset
-from api.db.crud import count_locations
+from .tables import Prediction, Event, User, Location, Dataset
+from .crud import count_locations
 from sqlalchemy.orm import Session
 
 import pandas as pd

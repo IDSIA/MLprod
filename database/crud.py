@@ -4,11 +4,10 @@ import numpy as np
 from . import schemas
 from .tables import Location, Prediction, Event, User
 
-from ..requests import UserData
 
-def create_userData(db: Session, user_data: UserData) -> User:
+def create_user_data(db: Session, user_data: dict) -> User:
     data = dict()
-    data.update(**user_data.__dict__)
+    data.update(**user_data)
     ages = np.array(user_data.people_age, dtype='float')
 
     data['age_avg'] = ages.mean()

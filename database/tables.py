@@ -1,7 +1,7 @@
 from sqlalchemy import Column, String, Float, DateTime, Integer, Boolean, Date
 from sqlalchemy.sql.functions import now
 
-from api.db.database import Base
+from .database import Base
 
 
 class Prediction(Base):

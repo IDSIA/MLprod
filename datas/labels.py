@@ -1,5 +1,3 @@
-from cProfile import label
-from site import USER_BASE
 import numpy as np
 
 from api.requests import LocationData, UserData
