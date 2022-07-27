@@ -23,6 +23,6 @@ WORKDIR /app
 COPY api/ api/
 COPY models/ models/
 COPY worker/ worker/
-COPY datas/ datas/
+COPY dataset/ dataset/
 
 CMD ["uvicorn", "api.routes:api", "--host", "0.0.0.0", "--port", "4789"]

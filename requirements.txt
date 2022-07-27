@@ -1,8 +1,6 @@
 jupyter
 matplotlib
 requests
-pandas
 python-dotenv
 seaborn
-scikit-learn
 tqdm

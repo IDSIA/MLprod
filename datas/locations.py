@@ -1,7 +1,5 @@
 import numpy as np
 
-import math
-
 from api.requests import LocationData
 from datas.utils import sample_bool, sample_float
 

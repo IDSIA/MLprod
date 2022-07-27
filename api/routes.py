@@ -9,7 +9,7 @@ from api.db.database import SessionLocal
 from api.db import crud, schemas, startup
 from api import requests
 
-from worker.pred import predict
+from worker.tasks.inference import inference
 
 
 api = FastAPI()
@@ -48,20 +48,16 @@ def root():
 
 
 @api.post('/pred', response_model=requests.PredictionOutput)
-async def schedule_prediction(input_x: requests.PredictionInput, db: Session = Depends(get_db)):
+async def schedule_prediction(user_data: requests.UserData, db: Session = Depends(get_db)):
     """This is the endpoint used for schedule an inference."""
-    crud.create_event('prediction')
+    crud.create_event(db, 'prediction')
+    # TODO: maybe let celery task save and load data from the database
+    ud = crud.create_userData(db, user_data)
 
-    x = float(input_x.x)
-    task: AsyncResult = predict.delay(x)
-    
-    prediction = schemas.PredictionCreate(
-        task_id=task.task_id,
-        x=x,
-        status=task.status,
-    )
+    # TODO: load all locations? Maybe filter them.
+    task: AsyncResult = inference.delay(ud.id)
 
-    db_pred = crud.create_prediction(db, prediction)
+    db_pred = crud.create_prediction(db, task.task_id, task.status)
     return requests.PredictionOutput(
         task_id=db_pred.task_id,
         status=db_pred.status,
@@ -112,6 +108,22 @@ async def get_click(choice: str, db: Session = Depends(get_db)):
     A click will be registered as a label on the data"""
     
     return HTTPException(501, 'Not implemented')
+
+
+@api.get('/content/info')
+async def get_content_info(db: Session = Depends(get_db)):
+    n_locations = crud.count_locations(db)
+    n_users = crud.count_users(db)
+
+    return requests.ContentInfo(
+        locations=n_locations,
+        users=n_users,
+    )
+
+
+@api.get('/content/location/{location_id}')
+async def get_content_location(location_id: int, db: Session = Depends(get_db)):
+    return crud.get_location(db, location_id)
 
 
 if __name__ == '__main__':

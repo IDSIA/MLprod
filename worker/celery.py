@@ -8,8 +8,8 @@ worker = Celery(
     backend=os.getenv('CELERY_BACKEND_URL'),
     broker=os.getenv('CELERY_BROKER_URL'),
     include=[
-        'worker.tasks',
-        'worker.pred',
+        'worker.tasks.inference',
+        'worker.tasks.train',
     ]
 )
 

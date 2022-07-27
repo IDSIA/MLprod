@@ -1,6 +1,5 @@
-from sqlalchemy import Column, String, Float, DateTime, Integer, Boolean
+from sqlalchemy import Column, String, Float, DateTime, Integer, Boolean, Date
 from sqlalchemy.sql.functions import now
-from sqlalchemy.orm import relationship
 
 from api.db.database import Base
 
@@ -11,8 +10,6 @@ class Prediction(Base):
     task_id  = Column(String, primary_key=True, index=True)
     time_post = Column(DateTime(timezone=True), server_default=now())
     time_get = Column(DateTime(timezone=True), default=None)
-    x = Column(Float, default=None)
-    y = Column(Float, default=None)
     status = Column(String, default='')
 
 # ---- Dataset tables ----
@@ -21,21 +18,18 @@ class User(Base):
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     creation_timestamp = Column(DateTime(timezone=True), server_default=now())
-    n_people = Column(Integer, nullable=False)
-    n_children = Column(Integer, nullable=False)
-    destination_lat = Column(Float, nullable=False)
-    destination_lon = Column(Float, nullable=False)
-    range = Column(Float, nullable=False)
+    people = Column(Integer, nullable=False)
+    children = Column(Integer, nullable=False)
     age_avg = Column(Float, nullable=False)
-    age_sd = Column(Float, nullable=False)
+    age_std = Column(Float, nullable=False)
     age_min = Column(Float, nullable=False)
     age_max = Column(Float, nullable=False)
     budget = Column(Integer, nullable=False)
     nights = Column(Integer, nullable=False)
-    arrival = Column(DateTime(timezone=True), nullable=False)
+    time_arrival = Column(Date(), nullable=True)
     pool = Column(Boolean, default=False)
     spa = Column(Boolean, default=False)
-    animals = Column(Boolean, default=False)
+    pet_friendly = Column(Boolean, default=False)
     lake = Column(Boolean, default=False)
     mountain = Column(Boolean, default=False)
     sport = Column(Boolean, default=False)
@@ -45,8 +39,8 @@ class Location(Base):
     __tablename__ = 'locations'
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     creation_timestamp = Column(DateTime(timezone=True), server_default=now())
-    lat = Column(Float, nullable=False)
-    lon = Column(Float, nullable=False)
+    lat = Column(Float, nullable=True)
+    lon = Column(Float, nullable=True)
     children = Column(Boolean, nullable=False)
     breakfast = Column(Boolean, nullable=False)
     lunch = Column(Boolean, nullable=False)

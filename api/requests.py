@@ -2,11 +2,6 @@ from pydantic import BaseModel
 from datetime import date
 
 
-class PredictionInput(BaseModel):
-    """Class that defines the input data for an inference."""
-    x: float
-
-
 class PredictionOutput(BaseModel):
     """Class that defines the output data of an inference.
     
@@ -17,21 +12,22 @@ class PredictionOutput(BaseModel):
 
 
 class UserData(BaseModel):
-    people_num: int
+    people: int
     people_age: list[int] # for each people
     children: int
     budget: float
-    time_arrival: date
     nights: int
-    spa: bool
+    time_arrival: date
     pool: bool
+    spa: bool
     pet_friendly: bool
-    lakes: bool
-    mountains: bool
+    lake: bool
+    mountain: bool
     sport: bool
 
 
 class LocationData(BaseModel):
+    people: int
     children: bool
     breakfast: bool
     lunch: bool
@@ -49,3 +45,8 @@ class LocationData(BaseModel):
     leisure_rating: float
     service_rating: float
     user_score: float
+
+
+class ContentInfo(BaseModel):
+    locations: int
+    users: int
