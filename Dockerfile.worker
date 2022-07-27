@@ -24,6 +24,4 @@ COPY database/ database/
 COPY worker/ worker/
 COPY models/ models/
 
-ENV PYTHONPATH "${PYTHONPATH}:/app"
-
 CMD ["celery", "-A", "worker.celery", "worker", "-l", "INFO"]

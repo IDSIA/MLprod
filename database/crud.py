@@ -101,5 +101,9 @@ def get_user(db: Session, id: int) -> User:
   return db.query(User).filter(User.id == id).first()
 
 
+def get_users(db: Session) -> User:
+  return db.query(User).all()
+
+
 def count_users(db: Session) -> int:
     return db.query(User).count()

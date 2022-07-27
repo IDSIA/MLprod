@@ -88,12 +88,12 @@ class UserLabeller:
         if user.pet_friendly:
             facilities_score_desired += self.weight_pet
             facilities_score_achieved += user.pet_friendly == location.animals
-        if user.lakes:
+        if user.lake:
             facilities_score_desired += self.weight_lake
-            facilities_score_achieved += user.lakes == location.lake
-        if user.mountains:
+            facilities_score_achieved += user.lake == location.lake
+        if user.mountain:
             facilities_score_desired += self.weight_mouintains
-            facilities_score_achieved += user.mountains == location.mountain
+            facilities_score_achieved += user.mountain == location.mountain
         if user.sport:
             facilities_score_desired += self.weight_sport
             facilities_score_achieved += user.sport == location.sport

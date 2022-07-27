@@ -12,7 +12,7 @@ class PredictionOutput(BaseModel):
 
 
 class UserData(BaseModel):
-    people: int
+    people_num: int
     people_age: list[int] # for each people
     children: int
     budget: float
@@ -27,7 +27,6 @@ class UserData(BaseModel):
 
 
 class LocationData(BaseModel):
-    people: int
     children: bool
     breakfast: bool
     lunch: bool

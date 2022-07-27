@@ -1,3 +1,4 @@
+from collections import UserDict
 from celery.result import AsyncResult
 from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session
@@ -122,6 +123,21 @@ async def get_content_info(db: Session = Depends(get_db)):
 @api.get('/content/location/{location_id}')
 async def get_content_location(location_id: int, db: Session = Depends(get_db)):
     return crud.get_location(db, location_id)
+
+
+@api.get('/content/locations')
+async def get_content_locations(db: Session = Depends(get_db)):
+    return crud.get_locations(db)
+
+
+@api.get('/content/user/{user_id}')
+async def get_content_user(user_id: int, db: Session = Depends(get_db)):
+    return crud.get_user(db, user_id)
+
+
+@api.get('/content/users')
+async def get_content_users(db: Session = Depends(get_db)):
+    return crud.get_users(db)
 
 
 if __name__ == '__main__':

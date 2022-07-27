@@ -172,7 +172,7 @@ def train_model(
         if loss_btc_mean < best_loss:
             best_loss = loss_btc_mean
             if save_best:
-                torch.save(model, best_model_path)
+                torch.save(model.state_dict(), best_model_path)
         
         metrics['loss_best'].append(best_loss)
 
@@ -217,6 +217,6 @@ def train_model(
             if 'f1' in metrics:
                 metrics['f1s_ts'].append(f1_score(Y_ts, pred_ts, zero_division=0))
 
-    torch.save(model, model_path)
+    torch.save(model.state_dict(), model_path)
 
     return metrics

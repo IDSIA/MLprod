@@ -18,7 +18,4 @@ imports=(
 include=[
     'worker.tasks.inference',
     'worker.tasks.train',
-    'worker.models.model',
-    'worker.models.preprocess',
-    'worker.models.train',
 ]

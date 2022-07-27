@@ -18,7 +18,7 @@ class User(Base):
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     creation_timestamp = Column(DateTime(timezone=True), server_default=now())
-    people = Column(Integer, nullable=False)
+    people_num = Column(Integer, nullable=False)
     children = Column(Integer, nullable=False)
     age_avg = Column(Float, nullable=False)
     age_std = Column(Float, nullable=False)

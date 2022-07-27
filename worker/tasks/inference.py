@@ -1,4 +1,3 @@
-import sys
 from celery import Task
 
 import torch
@@ -10,11 +9,11 @@ from database import crud
 from worker.celery import worker
 from worker.models import Model, PreProcess
 
+import json
 import logging
-import os
-import sys
 
 
+metadata_path: str='./models/metadata.json'
 mms_path: str='./models/mms.model'
 skb_path: str='./models/skb.model'
 model_path: str='./models/neuralnet.model'
@@ -32,16 +31,24 @@ class PredictTask(Task):
 
         self.model: Model = None
         self.preprocess: PreProcess = None
+        self.metadata: dict = None
 
     def __call__(self, *args, **kwargs):
         if not self.model:
-            logging.info(f'sys.path:{sys.path}')
-            logging.info(f'cwd: {os.getcwd()}')
+            logging.info('Load metadata')
+            
+            with open(metadata_path, 'r') as f:
+                self.metadata = json.load(f)
+            
             logging.info('Loading model')
-            self.model: Model = torch.load(model_path)
+            nn_state_dict = torch.load(model_path)
+            self.model = Model(self.metadata['x_output'])
+            self.model.load_state_dict(nn_state_dict)
+
             logging.info('Loading pre-process models')
             self.preprocess = PreProcess(mms_path, skb_path)
-            logging.info('All models loaded')
+
+            logging.info('All artifacts loaded')
 
         return self.run(*args, **kwargs)
 
@@ -50,7 +57,6 @@ class PredictTask(Task):
     ignore_result=False,
     bind=True,
     base=PredictTask,
-    path=('worker.models', 'Model', 'PreProcess')
 )
 def inference(self, uid: int):
     try:
@@ -58,14 +64,18 @@ def inference(self, uid: int):
 
         user = crud.get_user(db, uid)
         locs = crud.get_locations(db)
-    
-        df = pd.DataFrame([user.__dict__ | loc.__dict__ for loc in locs])
 
-        logging.info("dataframe columns:", df.columns)
+        df = pd.DataFrame([user.__dict__ | loc.__dict__ for loc in locs], columns=self.metadata['features'])
 
         x = df.values
-
         x = self.preprocess(x)
-        return self.model(x)
+
+        x = torch.FloatTensor(x)
+
+        out = self.model(x)
+        score = out.detach().numpy()
+
+        # save task id, user_id, and scores to database
+        return score.tolist()
     finally:
         db.close()
