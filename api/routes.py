@@ -1,3 +1,4 @@
+from collections import UserDict
 from celery.result import AsyncResult
 from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session
@@ -5,11 +6,12 @@ from sqlalchemy.orm import Session
 import uvicorn
 
 from api.middleware.metrics import PrometheusMiddleware, metrics_route
-from api.db.database import SessionLocal
-from api.db import crud, schemas, startup
 from api import requests
 
-from worker.pred import predict
+from database.database import SessionLocal
+from database import crud, startup
+
+from worker.tasks.inference import inference
 
 
 api = FastAPI()
@@ -48,20 +50,13 @@ def root():
 
 
 @api.post('/pred', response_model=requests.PredictionOutput)
-async def schedule_prediction(input_x: requests.PredictionInput, db: Session = Depends(get_db)):
+async def schedule_prediction(user_data: requests.UserData, db: Session = Depends(get_db)):
     """This is the endpoint used for schedule an inference."""
-    crud.create_event('prediction')
+    crud.create_event(db, 'prediction')
+    ud = crud.create_user_data(db, user_data.dict())
+    task: AsyncResult = inference.delay(ud.id)
 
-    x = float(input_x.x)
-    task: AsyncResult = predict.delay(x)
-    
-    prediction = schemas.PredictionCreate(
-        task_id=task.task_id,
-        x=x,
-        status=task.status,
-    )
-
-    db_pred = crud.create_prediction(db, prediction)
+    db_pred = crud.create_prediction(db, task.task_id, task.status)
     return requests.PredictionOutput(
         task_id=db_pred.task_id,
         status=db_pred.status,
@@ -112,6 +107,37 @@ async def get_click(choice: str, db: Session = Depends(get_db)):
     A click will be registered as a label on the data"""
     
     return HTTPException(501, 'Not implemented')
+
+
+@api.get('/content/info')
+async def get_content_info(db: Session = Depends(get_db)):
+    n_locations = crud.count_locations(db)
+    n_users = crud.count_users(db)
+
+    return requests.ContentInfo(
+        locations=n_locations,
+        users=n_users,
+    )
+
+
+@api.get('/content/location/{location_id}')
+async def get_content_location(location_id: int, db: Session = Depends(get_db)):
+    return crud.get_location(db, location_id)
+
+
+@api.get('/content/locations')
+async def get_content_locations(db: Session = Depends(get_db)):
+    return crud.get_locations(db)
+
+
+@api.get('/content/user/{user_id}')
+async def get_content_user(user_id: int, db: Session = Depends(get_db)):
+    return crud.get_user(db, user_id)
+
+
+@api.get('/content/users')
+async def get_content_users(db: Session = Depends(get_db)):
+    return crud.get_users(db)
 
 
 if __name__ == '__main__':

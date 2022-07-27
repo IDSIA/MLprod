@@ -1,9 +1,13 @@
 celery
 fastapi
 fastapi-sqlalchemy
+pandas
 prometheus-client
 psycopg2-binary
 pydantic
 python-dotenv
+scikit-learn
+sqlalchemy
 redis
+torch
 uvicorn

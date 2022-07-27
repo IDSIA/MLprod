@@ -7,3 +7,15 @@ result_serializer='json'
 
 timezone='Europe/Zurich'
 enable_utc=True
+
+imports=(
+    'worker.tasks',
+    'worker.models',
+    'database',
+    'database.crud',
+)
+
+include=[
+    'worker.tasks.inference',
+    'worker.tasks.train',
+]

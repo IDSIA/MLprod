@@ -1,5 +1,8 @@
-from api.db.tables import Prediction, Event, User, Location, Dataset
+from .tables import Prediction, Event, User, Location, Dataset
+from .crud import count_locations
 from sqlalchemy.orm import Session
+
+import pandas as pd
 
 
 def init_content(db: Session):
@@ -16,3 +19,12 @@ def init_content(db: Session):
     User.__table__.create(bind=engine, checkfirst=True)
     Location.__table__.create(bind=engine, checkfirst=True)
     Dataset.__table__.create(bind=engine, checkfirst=True)
+
+    n_locations = count_locations(db)
+
+    if n_locations == 0:
+        df = pd.read_csv('./dataset/dataset_locations.tsv', sep='\t')
+
+        db.bulk_insert_mappings(Location, df.to_dict(orient='records'))
+        db.commit()
+        db.close()

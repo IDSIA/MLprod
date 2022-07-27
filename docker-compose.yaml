@@ -6,7 +6,6 @@ networks:
     external: true
 
 services:
-
   rabbitmq:
     image: rabbitmq
     # ports: 5672
@@ -58,6 +57,7 @@ services:
       - CELERY_BACKEND_URL=${CELERY_BACKEND_URL}
       - CELERY_BROKER_URL=${CELERY_BROKER_URL}
       - CELERY_QUEUE=${CELERY_QUEUE}
+      - DATABASE_URL=postgresql://${DATABASE_USER}:${DATABASE_PASS}@${DATABASE_HOST}/${DATABASE_SCHEMA}
     networks:
       - mlpnet
     depends_on:
@@ -74,8 +74,6 @@ services:
       - CELERY_BACKEND_URL=${CELERY_BACKEND_URL}
       - CELERY_BROKER_URL=${CELERY_BROKER_URL}
       - DATABASE_URL=postgresql://${DATABASE_USER}:${DATABASE_PASS}@${DATABASE_HOST}/${DATABASE_SCHEMA}
-      - STATSD_URL=${STATSD_URL}
-      - STATSD_PORT=${STATSD_PORT}
     ports:
       - 4789:4789
     networks:

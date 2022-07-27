@@ -1,8 +1,7 @@
 import numpy as np
 from api.requests import UserData
 
-from datas.coordinates import LOCATIONS
-from datas.utils import sample_bool, sample_float, sample_int, sample_list
+from datas.utils import sample_bool, sample_float, sample_int
 
 
 def generate_user_data(
@@ -26,7 +25,6 @@ def generate_user_data(
     start_date_tolerance_min: int=1,
     start_date_tolerance_max: int=30,
 ) -> UserData:
-
     """This function will generate the input user data  in a synthtetic way. The objective
     is to simulate possible requests from the users on the hypotetical web interface
     and start the inferences on the possible.
@@ -57,8 +55,8 @@ def generate_user_data(
     spa = sample_bool(r, spa_thr)
     pool = sample_bool(r, pool_thr)
     pet_friendly = sample_bool(r, pet_friendly_thr)
-    lakes = sample_bool(r, lakes_thr)
-    mountains = sample_bool(r, mountains_thr)
+    lake = sample_bool(r, lakes_thr)
+    mountain = sample_bool(r, mountains_thr)
     sport = sample_bool(r, sport_thr)
 
     return UserData(
@@ -71,8 +69,7 @@ def generate_user_data(
         spa=spa,
         pool=pool,
         pet_friendly=pet_friendly,
-        lakes=lakes,
-        mountains=mountains,
+        lake=lake,
+        mountain=mountain,
         sport=sport,
     )
-    
