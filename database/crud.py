@@ -6,9 +6,8 @@ from .tables import Location, Prediction, Event, User
 
 
 def create_user_data(db: Session, user_data: dict) -> User:
-    data = dict()
-    data.update(**user_data)
-    ages = np.array(user_data.people_age, dtype='float')
+    data = dict() | user_data
+    ages = np.array(data['people_age'], dtype='float')
 
     data['age_avg'] = ages.mean()
     data['age_std'] = ages.std()
@@ -35,7 +34,7 @@ def get_prediction(db: Session, task_id: str) -> Prediction:
     return db.query(Prediction).filter(Prediction.task_id == task_id).first()
 
 
-def create_prediction(db: Session, pred: schemas.PredictionCreate) -> Prediction:
+def create_prediction(db: Session, task_id: str, status: str) -> Prediction:
     """Insert a new prediction in the database.
     
     :param db:
@@ -43,10 +42,7 @@ def create_prediction(db: Session, pred: schemas.PredictionCreate) -> Prediction
     :param pred:
       Prediction object with the required fields
     """
-    db_pred = Prediction(
-        task_id = pred.task_id,
-        status = pred.status,
-    )
+    db_pred = Prediction(task_id=task_id, status=status)
     db.add(db_pred)
     db.commit()
     db.refresh(db_pred)
@@ -93,12 +89,16 @@ def get_location(db: Session, id: int) -> Location:
 
 
 def get_locations(db: Session) -> list[Location]:
-    #TODO: add limit to this query
+    #TODO: add limit to this query?
     return db.query(Location).all()
 
 
 def count_locations(db: Session) -> int:
     return db.query(Location).count()
+
+
+def get_user(db: Session, id: int) -> User:
+  return db.query(User).filter(User.id == id).first()
 
 
 def count_users(db: Session) -> int:

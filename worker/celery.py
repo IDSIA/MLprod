@@ -7,10 +7,6 @@ worker = Celery(
     'tasks',
     backend=os.getenv('CELERY_BACKEND_URL'),
     broker=os.getenv('CELERY_BROKER_URL'),
-    include=[
-        'worker.tasks.inference',
-        'worker.tasks.train',
-    ]
 )
 
 worker.config_from_object('worker.celeryconfig')

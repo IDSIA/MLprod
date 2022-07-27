@@ -1,5 +1,8 @@
 celery
 pandas
 redis
+psycopg2-binary
+pydantic
 scikit-learn
+sqlalchemy
 torch

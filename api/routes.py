@@ -52,10 +52,7 @@ def root():
 async def schedule_prediction(user_data: requests.UserData, db: Session = Depends(get_db)):
     """This is the endpoint used for schedule an inference."""
     crud.create_event(db, 'prediction')
-    # TODO: maybe let celery task save and load data from the database
-    ud = crud.create_user_data(db, user_data.__dict__)
-
-    # TODO: load all locations? Maybe filter them.
+    ud = crud.create_user_data(db, user_data.dict())
     task: AsyncResult = inference.delay(ud.id)
 
     db_pred = crud.create_prediction(db, task.task_id, task.status)
