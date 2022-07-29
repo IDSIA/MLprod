@@ -1,4 +1,3 @@
-from collections import UserDict
 from celery.result import AsyncResult
 from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session
@@ -49,56 +48,59 @@ def root():
     return 'Hi! 😀'
 
 
-@api.post('/pred', response_model=requests.PredictionOutput)
-async def schedule_prediction(user_data: requests.UserData, db: Session = Depends(get_db)):
+@api.post('/inference/start')
+async def schedule_inference(user_data: requests.UserData, db: Session = Depends(get_db)):
     """This is the endpoint used for schedule an inference."""
-    crud.create_event(db, 'prediction')
+    crud.create_event(db, 'inference_start')
     ud = crud.create_user_data(db, user_data.dict())
     task: AsyncResult = inference.delay(ud.id)
 
-    db_pred = crud.create_prediction(db, task.task_id, task.status)
-    return requests.PredictionOutput(
-        task_id=db_pred.task_id,
-        status=db_pred.status,
-        y=None
+    db_inf = crud.create_inference(db, task.task_id, task.status)
+    return requests.InferenceStatus(
+        task_id=db_inf.task_id,
+        status=db_inf.status,
     )
 
 
-@api.get('/result/{task_id}', response_model=requests.PredictionOutput)
-async def get_results(task_id: str, db: Session = Depends(get_db)):
+@api.get('/inference/status/{task_id}', response_model=requests.InferenceStatus)
+async def get_inference_status(task_id: str, db: Session = Depends(get_db)):
     """This si the endpoint to get the results of an inference."""
     crud.create_event('results')
     
     task = AsyncResult(task_id)
     task_id, status = task.task_id, task.status
 
-    db_pred = crud.get_prediction(db, task_id=task_id)
+    db_inf = crud.get_inference(db, task_id=task_id)
 
-    if db_pred is None:
+    if db_inf is None:
         raise HTTPException(status_code=404, detail='Task not found')
 
-    db_pred.status = status
+    db_inf.status = status
 
     if task.failed():
-        crud.update_prediction(db, db_pred)
+        crud.update_inference(db, db_inf.task_id, db_inf.status)
         raise HTTPException(status_code=500, detail='Task failed')
 
     if not task.ready():
-        return requests.PredictionOutput(
-            task_id=db_pred.task_id,
-            status=db_pred.task_id,
-            y = None
+        return requests.InferenceStatus(
+            task_id=db_inf.task_id,
+            status=db_inf.task_id,
         )
 
-    db_pred.y = task.get()
+    db_inf.y = task.get()
 
-    db_pred = crud.update_prediction(db, db_pred)
+    db_inf = crud.update_inference(db, db_inf)
 
-    return requests.PredictionOutput(
-        task_id=db_pred.task_id,
-        status=db_pred.task_id,
-        y = db_pred.y
+    return requests.InferenceStatus(
+        task_id=db_inf.task_id,
+        status=db_inf.task_id,
     )
+
+
+@api.get('/inference/results/{task_id}')
+async def get_inference_results(task_id: str, db: Session = Depends(get_db)):
+
+    return HTTPException(501, 'Not implemented')
 
 
 @api.get('/post/{choice}')

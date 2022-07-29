@@ -1,16 +1,9 @@
-from sqlalchemy import Column, String, Float, DateTime, Integer, Boolean, Date
+from sqlalchemy import Column, ForeignKey, String, Float, DateTime, Integer, Boolean, Date
 from sqlalchemy.sql.functions import now
+from sqlalchemy.orm import relationship
 
 from .database import Base
 
-
-class Prediction(Base):
-    """Table used to store the inference requests from the users, and the results."""
-    __tablename__ = 'predictions'
-    task_id  = Column(String, primary_key=True, index=True)
-    time_post = Column(DateTime(timezone=True), server_default=now())
-    time_get = Column(DateTime(timezone=True), default=None)
-    status = Column(String, default='')
 
 # ---- Dataset tables ----
 
@@ -67,6 +60,32 @@ class Dataset(Base):
     id_location = Column(Integer, nullable=False)
     label = Column(Integer, nullable=False)
 
+
+# ---- Inference tables ----
+
+class Inference(Base):
+    """Table used to store the inference requests from the users, and the results."""
+    __tablename__ = 'inferences'
+    task_id = Column(String, primary_key=True, index=True)
+    time_creation = Column(DateTime(timezone=True), server_default=now())
+    time_get = Column(DateTime(timezone=True), default=None)
+    time_update = Column(DateTime(timezone=True), default=None)
+    user_id = Column(Integer, ForeignKey('users.id'))
+    status = Column(String, default='')
+
+    user = relationship('User')
+
+
+class Result(Base):
+    """Table used to store the inference results from the ML model."""
+    __tablename__ = 'results'
+    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    user_id = Column(Integer, ForeignKey('users.id'))
+    location_id = Column(Integer, ForeignKey('locations.id'))
+    score = Column(Float, nullable=False)
+
+    user = relationship('User')
+    location = relationship('Location')
 
 
 # ---- Monitoring and metrics tables ----

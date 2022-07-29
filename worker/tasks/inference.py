@@ -58,12 +58,14 @@ class PredictTask(Task):
     bind=True,
     base=PredictTask,
 )
-def inference(self, uid: int):
+def inference(self, user_id: int):
     try:
         db = SessionLocal()
 
-        user = crud.get_user(db, uid)
+        user = crud.get_user(db, user_id)
         locs = crud.get_locations(db)
+
+        locs_id = [loc.id for loc in locs]
 
         df = pd.DataFrame([user.__dict__ | loc.__dict__ for loc in locs], columns=self.metadata['features'])
 
@@ -73,9 +75,16 @@ def inference(self, uid: int):
         x = torch.FloatTensor(x)
 
         out = self.model(x)
-        score = out.detach().numpy()
+        score = out.detach().numpy().astype('float')
+
+        df['score'] = score
+        df['user_id'] = user_id
+        df['location_id'] = locs_id
 
         # save task id, user_id, and scores to database
-        return score.tolist()
+        crud.create_results(db, df)
+
+        # TODO: return something...
+        return score.max()
     finally:
         db.close()

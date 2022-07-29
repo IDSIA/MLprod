@@ -2,13 +2,10 @@ from pydantic import BaseModel
 from datetime import date
 
 
-class PredictionOutput(BaseModel):
-    """Class that defines the output data of an inference.
-    
-    Field ``y`` could be null if the inference is still working."""
+class InferenceStatus(BaseModel):
+    """Class that defines the output data of an inference."""
     task_id: str
     status : str
-    y: float | None
 
 
 class UserData(BaseModel):

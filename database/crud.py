@@ -1,11 +1,14 @@
-from sqlalchemy.orm import Session
 import numpy as np
+import pandas as pd
 
-from . import schemas
-from .tables import Location, Prediction, Event, User
+from sqlalchemy.orm import Session
+
+from datetime import datetime
+from .tables import Location, Inference, Event, Result, User
 
 
 def create_user_data(db: Session, user_data: dict) -> User:
+    """Store the data from a user in the database."""
     data = dict() | user_data
     ages = np.array(data['people_age'], dtype='float')
 
@@ -23,7 +26,24 @@ def create_user_data(db: Session, user_data: dict) -> User:
     return db_user
 
 
-def get_prediction(db: Session, task_id: str) -> Prediction:
+def create_inference(db: Session, task_id: str, status: str) -> Inference:
+    """Insert a new inference in the database.
+    
+    :param db:
+      Session with the connection to the database.
+    :param task_id:
+      Generated id for this task.
+    :param status:
+      Inirial status for this task.
+    """
+    db_pred = Inference(task_id=task_id, status=status)
+    db.add(db_pred)
+    db.commit()
+    db.refresh(db_pred)
+    return db_pred
+
+
+def get_inference(db: Session, task_id: str) -> Inference:
     """Extract from the database the first Celery's task that match the given task_id.
 
     :param db:
@@ -31,40 +51,44 @@ def get_prediction(db: Session, task_id: str) -> Prediction:
     :param task_id:
       The id associated to the task.
     """
-    return db.query(Prediction).filter(Prediction.task_id == task_id).first()
+    return db.query(Inference).filter(Inference.task_id == task_id).first()
 
 
-def create_prediction(db: Session, task_id: str, status: str) -> Prediction:
-    """Insert a new prediction in the database.
-    
+def update_inference(db: Session, task_id: str, status: str) -> Inference:
+    """Upadte an existing inference with the results.
+
     :param db:
       Session with the connection to the database.
     :param pred:
-      Prediction object with the required fields
+      Task id to update.
+    :param status:
+      New status to assign to the given task id.
     """
-    db_pred = Prediction(task_id=task_id, status=status)
-    db.add(db_pred)
+    db_pred = get_inference(db, task_id)
+    db_pred.time_get = datetime.now()
+    db_pred.status = status
+
     db.commit()
     db.refresh(db_pred)
     return db_pred
 
 
-def update_prediction(db: Session, pred: schemas.Prediction) -> Prediction:
-    """Upadte a new prediction with the results.
+def create_results(db: Session, df: pd.DataFrame) -> list[Result]:
+    db_results = []
+    for _   , row in df.iterrows():
+        result = Result(
+            user_id=row['user_id'],
+            location_id=row['location_id'],
+            score=row['score'],
+        )
 
-    :param db:
-      Session with the connection to the database.
-    :param pred:
-      Prediction object with the required fields
-    """
-    db_pred = get_prediction(db, pred.task_id)
+        db.add(result)
+        db_results.append(result)
 
-    db_pred.time_get = pred.time_get
-    db_pred.status = pred.status
     db.commit()
-    db.refresh(db_pred)
-    return db_pred
-
+    for db_result in db_results:
+        db.refresh(db_result)
+    return db_results
 
 def create_event(db: Session, event: str) -> Event:
     """Insert a new event into thte database.
