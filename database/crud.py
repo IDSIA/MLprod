@@ -1,11 +1,20 @@
-from sqlalchemy.orm import Session
 import numpy as np
+import pandas as pd
 
-from . import schemas
-from .tables import Location, Prediction, Event, User
+from sqlalchemy.orm import Session
+
+from datetime import datetime
+from .tables import Location, Inference, Event, Result, User
 
 
 def create_user_data(db: Session, user_data: dict) -> User:
+    """Store the data from a user in the database.
+    
+    :param db:
+        Session with the connection to the database.
+    :param user_data:
+        Content to be saved to the database.
+    """
     data = dict() | user_data
     ages = np.array(data['people_age'], dtype='float')
 
@@ -23,57 +32,128 @@ def create_user_data(db: Session, user_data: dict) -> User:
     return db_user
 
 
-def get_prediction(db: Session, task_id: str) -> Prediction:
-    """Extract from the database the first Celery's task that match the given task_id.
-
-    :param db:
-      Session with the connection to the database.
-    :param task_id:
-      The id associated to the task.
-    """
-    return db.query(Prediction).filter(Prediction.task_id == task_id).first()
-
-
-def create_prediction(db: Session, task_id: str, status: str) -> Prediction:
-    """Insert a new prediction in the database.
+def create_inference(db: Session, task_id: str, status: str) -> Inference:
+    """Insert a new inference in the database.
     
     :param db:
-      Session with the connection to the database.
-    :param pred:
-      Prediction object with the required fields
+        Session with the connection to the database.
+    :param task_id:
+        Generated id for this task.
+    :param status:
+        Inirial status for this task.
     """
-    db_pred = Prediction(task_id=task_id, status=status)
+    db_pred = Inference(task_id=task_id, status=status)
     db.add(db_pred)
     db.commit()
     db.refresh(db_pred)
     return db_pred
 
 
-def update_prediction(db: Session, pred: schemas.Prediction) -> Prediction:
-    """Upadte a new prediction with the results.
+def get_inference(db: Session, task_id: str) -> Inference:
+    """Extract from the database the first Celery's task that match the given task_id.
 
     :param db:
-      Session with the connection to the database.
-    :param pred:
-      Prediction object with the required fields
+        Session with the connection to the database.
+    :param task_id:
+        The id associated to the task.
     """
-    db_pred = get_prediction(db, pred.task_id)
+    return db.query(Inference).filter(Inference.task_id == task_id).first()
 
-    db_pred.time_get = pred.time_get
-    db_pred.status = pred.status
+
+def update_inference(db: Session, task_id: str, status: str) -> Inference:
+    """Update an existing inference with the results.
+
+    :param db:
+        Session with the connection to the database.
+    :param pred:
+        Task id to update.
+    :param status:
+        New status to assign to the given task id.
+    """
+    db_pred = get_inference(db, task_id)
+    db_pred.time_get = datetime.now()
+    db_pred.status = status
+
     db.commit()
     db.refresh(db_pred)
     return db_pred
+
+
+def create_results(db: Session, df: pd.DataFrame) -> list[Result]:
+    """Creates a new result from a Pandas' DataFrame. This DataFrame is the 
+    Output of an inference call of our ML model.
+
+    :param db:
+        Session with the connection to the database.
+    :param df:
+        A dataframe with the columns 'user_id', 'location_id', 'score', and
+        'task_id'.
+    """
+    db_results = []
+    for _, row in df.iterrows():
+        result = Result(
+            user_id=row['user_id'],
+            location_id=row['location_id'],
+            score=row['score'],
+            task_id=row['task_id'],
+        )
+
+        db.add(result)
+        db_results.append(result)
+
+    db.commit()
+    for db_result in db_results:
+        db.refresh(db_result)
+
+    return db_results
+
+
+def get_results(db: Session, task_id: str, limit: int=10) -> list[dict]:
+    """Get all the scored results based on the """
+    db_results = (
+        db.query(Result)
+        .join(Location, Result.location_id == Location.id)
+        .filter(Result.task_id == task_id)
+        .order_by(Result.score.desc())
+        .limit(limit)
+        .all()
+    )
+
+    results = []
+    for db_result in db_results:
+        results.append({
+            'score': db_result.score,
+            'location_id': db_result.location.id,
+            'children': db_result.location.children,
+            'breakfast': db_result.location.breakfast,
+            'lunch': db_result.location.lunch,
+            'dinner': db_result.location.dinner,
+            'price': db_result.location.price,
+            'pool': db_result.location.pool,
+            'spa': db_result.location.spa,
+            'animals': db_result.location.animals,
+            'lake': db_result.location.lake,
+            'mountain': db_result.location.mountain,
+            'sport': db_result.location.sport,
+            'family_rating': db_result.location.family_rating,
+            'outdoor_rating': db_result.location.outdoor_rating,
+            'food_rating': db_result.location.food_rating,
+            'leisure_rating': db_result.location.leisure_rating,
+            'service_rating': db_result.location.service_rating,
+            'user_score': db_result.location.user_score,
+        })
+
+    return results
 
 
 def create_event(db: Session, event: str) -> Event:
     """Insert a new event into thte database.
     
     :param db:
-      Session with the connection to the database.
+        Session with the connection to the database.
     :param event:
-      Event to be registered in the database. Technically, it is a string field,
-      avoid typos and put single words.
+        Event to be registered in the database. Technically, it is a string field,
+        avoid typos and put single words.
     """
     db_event = Event(
         event=event
@@ -88,8 +168,10 @@ def get_location(db: Session, id: int) -> Location:
     return db.query(Location).filter(Location.id == id).first()
 
 
-def get_locations(db: Session) -> list[Location]:
-    #TODO: add limit to this query?
+def get_locations(db: Session, limit: int=0) -> list[Location]:
+    if limit > 0:
+        return db.query(Location).limit(limit).all()
+
     return db.query(Location).all()
 
 
@@ -98,11 +180,11 @@ def count_locations(db: Session) -> int:
 
 
 def get_user(db: Session, id: int) -> User:
-  return db.query(User).filter(User.id == id).first()
+    return db.query(User).filter(User.id == id).first()
 
 
 def get_users(db: Session) -> User:
-  return db.query(User).all()
+    return db.query(User).all()
 
 
 def count_users(db: Session) -> int:
