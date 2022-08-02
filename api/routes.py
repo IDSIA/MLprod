@@ -94,7 +94,7 @@ async def get_inference_status(task_id: str, db: Session = Depends(get_db)):
 
 
 @api.get('/inference/results/{task_id}')
-async def get_inference_results(task_id: str, db: Session = Depends(get_db)):
+async def get_inference_results(task_id: str, limit: int=10, db: Session = Depends(get_db)):
     """This is the endpoint to get the results with scores once the inference 
     task has been completed.
     
@@ -102,11 +102,11 @@ async def get_inference_results(task_id: str, db: Session = Depends(get_db)):
     """
     crud.create_event(db, 'results')
 
-    return crud.get_results(db, task_id)
+    return crud.get_results(db, task_id, limit)
 
 
-@api.get('/post/{choice}')
-async def get_click(choice: str, db: Session = Depends(get_db)):
+@api.get('/select/{task_id}/{choice}')
+async def get_click(task_id: str, choice: str, db: Session = Depends(get_db)):
     """This is the endpoint used to simulate a click on a choice.
     A click will be registered as a label on the data"""
     

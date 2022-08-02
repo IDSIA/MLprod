@@ -53,5 +53,7 @@ g_results = requests.get(
 )
 
 result = g_results.json()
-print(result)
+
 print(len(result))
+for r in result:
+    print(r['location_id'], r['score'])

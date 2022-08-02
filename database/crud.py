@@ -108,12 +108,14 @@ def create_results(db: Session, df: pd.DataFrame) -> list[Result]:
     return db_results
 
 
-def get_results(db: Session, task_id: str) -> list[dict]:
+def get_results(db: Session, task_id: str, limit: int=10) -> list[dict]:
     """Get all the scored results based on the """
     db_results = (
         db.query(Result)
         .join(Location, Result.location_id == Location.id)
         .filter(Result.task_id == task_id)
+        .order_by(Result.score.desc())
+        .limit(limit)
         .all()
     )
 
