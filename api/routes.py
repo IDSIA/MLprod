@@ -65,7 +65,7 @@ async def schedule_inference(user_data: requests.UserData, db: Session = Depends
 @api.get('/inference/status/{task_id}', response_model=requests.InferenceStatus)
 async def get_inference_status(task_id: str, db: Session = Depends(get_db)):
     """This si the endpoint to get the results of an inference."""
-    crud.create_event('results')
+    crud.create_event(db, 'status')
     
     task = AsyncResult(task_id)
     task_id, status = task.task_id, task.status
@@ -76,31 +76,33 @@ async def get_inference_status(task_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail='Task not found')
 
     db_inf.status = status
+    db_inf = crud.update_inference(db, db_inf.task_id, db_inf.status)
 
     if task.failed():
-        crud.update_inference(db, db_inf.task_id, db_inf.status)
         raise HTTPException(status_code=500, detail='Task failed')
 
     if not task.ready():
         return requests.InferenceStatus(
             task_id=db_inf.task_id,
-            status=db_inf.task_id,
+            status=db_inf.status,
         )
-
-    db_inf.y = task.get()
-
-    db_inf = crud.update_inference(db, db_inf)
 
     return requests.InferenceStatus(
         task_id=db_inf.task_id,
-        status=db_inf.task_id,
+        status=db_inf.status,
     )
 
 
 @api.get('/inference/results/{task_id}')
 async def get_inference_results(task_id: str, db: Session = Depends(get_db)):
+    """This is the endpoint to get the results with scores once the inference 
+    task has been completed.
+    
+    Note: check the status of the task with the '/inference/status' endpoint.
+    """
+    crud.create_event(db, 'results')
 
-    return HTTPException(501, 'Not implemented')
+    return crud.get_results(db, task_id)
 
 
 @api.get('/post/{choice}')

@@ -80,11 +80,10 @@ def inference(self, user_id: int):
         df['score'] = score
         df['user_id'] = user_id
         df['location_id'] = locs_id
+        df['task_id'] = str(self.request.id)
 
         # save task id, user_id, and scores to database
         crud.create_results(db, df)
 
-        # TODO: return something...
-        return score.max()
     finally:
         db.close()

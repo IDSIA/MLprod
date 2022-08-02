@@ -80,6 +80,7 @@ class Result(Base):
     """Table used to store the inference results from the ML model."""
     __tablename__ = 'results'
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    task_id = Column(String, nullable=False)
     user_id = Column(Integer, ForeignKey('users.id'))
     location_id = Column(Integer, ForeignKey('locations.id'))
     score = Column(Float, nullable=False)
