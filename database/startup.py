@@ -2,6 +2,7 @@ from .tables import User, Location, Dataset, Inference, Result, Event
 from .crud import count_locations
 from sqlalchemy.orm import Session
 
+import numpy as np
 import pandas as pd
 
 
@@ -26,6 +27,7 @@ def init_content(db: Session):
 
     if n_locations == 0:
         df = pd.read_csv('./dataset/dataset_locations.tsv', sep='\t')
+        df['id'] = np.arange(df.shape[0])
 
         db.bulk_insert_mappings(Location, df.to_dict(orient='records'))
         db.commit()
