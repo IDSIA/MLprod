@@ -43,6 +43,10 @@ class LocationData(BaseModel):
     user_score: float
 
 
+class LabelData(BaseModel):
+    task_id: str
+    location_id: int
+
 class ContentInfo(BaseModel):
     locations: int
     users: int

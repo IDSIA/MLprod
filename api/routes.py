@@ -102,15 +102,21 @@ async def get_inference_results(task_id: str, limit: int=10, db: Session = Depen
     """
     crud.create_event(db, 'results')
 
-    return crud.get_results(db, task_id, limit)
+    return crud.get_results_locations(db, task_id, limit)
 
 
-@api.get('/select/{task_id}/{choice}')
-async def get_click(task_id: str, choice: str, db: Session = Depends(get_db)):
+@api.put('/select/')
+async def get_click(label: requests.LabelData, db: Session = Depends(get_db)):
     """This is the endpoint used to simulate a click on a choice.
     A click will be registered as a label on the data"""
-    
-    return HTTPException(501, 'Not implemented')
+    crud.create_event(db, 'selection')
+
+    db_result = crud.update_result_label(db, label.task_id, label.location_id)
+
+    if db_result is None:
+        return HTTPException(404, f"Result not found: invalid task_id or location_id")
+
+    return db_result
 
 
 @api.get('/content/info')
@@ -142,6 +148,16 @@ async def get_content_user(user_id: int, db: Session = Depends(get_db)):
 @api.get('/content/users')
 async def get_content_users(db: Session = Depends(get_db)):
     return crud.get_users(db)
+
+
+@api.get('/content/result/{result_id}')
+async def get_content_result(result_id: int, db: Session = Depends(get_db)):
+    return crud.get_result(db, result_id)
+
+
+@api.get('/content/results')
+async def get_content_result(task_id: str, db: Session = Depends(get_db)):
+    return crud.get_results(db, task_id)
 
 
 if __name__ == '__main__':

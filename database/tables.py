@@ -84,6 +84,7 @@ class Result(Base):
     user_id = Column(Integer, ForeignKey('users.id'))
     location_id = Column(Integer, ForeignKey('locations.id'))
     score = Column(Float, nullable=False)
+    label = Column(Integer, default=0)
 
     user = relationship('User')
     location = relationship('Location')
