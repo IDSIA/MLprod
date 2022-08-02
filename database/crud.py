@@ -96,19 +96,21 @@ def create_results(db: Session, df: pd.DataFrame) -> list[Result]:
             location_id=row['location_id'],
             score=row['score'],
             task_id=row['task_id'],
+            label=0,
         )
 
         db.add(result)
         db_results.append(result)
 
     db.commit()
+    
     for db_result in db_results:
         db.refresh(db_result)
 
     return db_results
 
 
-def get_results(db: Session, task_id: str, limit: int=10) -> list[dict]:
+def get_results_locations(db: Session, task_id: str, limit: int=10) -> list[dict]:
     """Get all the scored results based on the """
     db_results = (
         db.query(Result)
@@ -144,6 +146,37 @@ def get_results(db: Session, task_id: str, limit: int=10) -> list[dict]:
         })
 
     return results
+
+
+def get_results(db: Session, task_id: int) -> list[Result]:
+    return db.query(Result).filter(Result.task_id == task_id).all()
+
+
+def get_result(db: Session, result_id: int) -> Result:
+    return db.query(Result).filter(Result.id == result_id).first()
+
+
+def update_result_label(db: Session, task_id: str, location_id: int) -> Result:
+    """Updates the result identified by task_id and location_id by assigning 
+    the label 1 (default is 0).
+    
+    :param db:
+        Session with the connection to the database.
+    :param task_id:
+        Id of the task to update.
+    :param location_id:
+        Id of the location to update.
+    """
+    db_result = db.query(Result).filter(Result.task_id == task_id).filter(Result.location_id == location_id).first()
+
+    if db_result is None:
+        return None
+    
+    db_result.label = 1
+    db.commit()
+    db.refresh(db_result)
+
+    return db_result
 
 
 def create_event(db: Session, event: str) -> Event:
