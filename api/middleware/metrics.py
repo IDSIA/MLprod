@@ -20,10 +20,10 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
     def __init__(self, 
             app: ASGIApp, 
             app_name:str='ASGIApp',
-            skip_paths: list[str]=['/metrics']
+            skip_paths: list[str]=['/metrics', '/docs']
     ) -> None:
         super().__init__(app)
-        labels = ['method', 'path', 'status_code', 'headers', 'app_name']
+        labels = ['method', 'path', 'status_code', 'app_name']
 
         self.request_counter = Counter(
             'api_request_total', 
@@ -48,9 +48,14 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
             except Exception as e:
                     raise e
 
+        # all paths have 3 slash then an id, here we clean the path from the id
+        tokens = path.split('/')
+        if len(tokens) > 3:
+            tokens = tokens[:3]
+        path = '/'.join(tokens)
+
         method = request.method
         status_code = status.HTTP_408_REQUEST_TIMEOUT
-        headers = {k: v for k,v in request.headers.items()}
 
         begin = time()
 
@@ -67,7 +72,6 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
                 'method': method,
                 'path': path,
                 'status_code': status_code,
-                'headers': headers,
                 'app_name': self.app_name,
             }
 
