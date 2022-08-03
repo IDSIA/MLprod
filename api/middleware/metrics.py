@@ -7,7 +7,7 @@ from starlette.requests import Request
 from starlette.responses import Response
 from starlette import status
 
-from prometheus_client import REGISTRY, CONTENT_TYPE_LATEST, CollectorRegistry, generate_latest
+from prometheus_client import REGISTRY, CONTENT_TYPE_LATEST, CollectorRegistry, Gauge, generate_latest
 from prometheus_client.multiprocess import MultiProcessCollector
 from prometheus_client import Counter, Histogram
 
@@ -26,14 +26,23 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
         labels = ['method', 'path', 'status_code', 'app_name']
 
         self.request_counter = Counter(
-            'api_request_total', 
+            'api_request', 
             'Total HTTP requests',
             labels
         )
+        self.request_exception = Counter(
+            'api_exception',
+            'Total number of exceptions on API requests',
+            labels,
+        )
         self.request_time = Histogram(
-            'api_request_processing_time',
+            'api_processing_time',
             'HTTP request processing time in seconds', 
             labels
+        )
+        self.active_inferences = Gauge(
+            'api_active_inferences',
+            'Number of active inferences',
         )
 
         self.app_name = app_name
@@ -63,11 +72,21 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)
             status_code = response.status_code
         except Exception as e:
+            # track exceptions
+            self.request_exception.labels(method=method, path=path, app_name=self.app_name, exception=str(e))
             raise e
 
         finally:
+            # track active inferences
+            if path == '/inference/start':
+                self.active_inferences.inc(1)
+            if path == '/inference/results':
+                self.active_inferences.dec(1)
+
+            # track spent time
             spent_time = time() - begin
 
+            # track visits
             labels = {
                 'method': method,
                 'path': path,
