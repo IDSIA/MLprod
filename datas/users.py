@@ -1,7 +1,33 @@
 import numpy as np
+import pandas as pd
 from api.requests import UserData
 
 from datas.utils import sample_bool, sample_float, sample_int
+
+
+def read_user_config(config: str) -> list[dict]:
+    """This function will read a file in TSV format that contains all the information
+    to generate different kind of users. Return a list of settings that can be used 
+    with the `generate_user_data_from_conf` function.
+    
+    :param config:
+        A valid path to a TSV file.
+    """
+    user_conf = pd.read_csv(config, sep='\t')
+    user_settings = []
+    for _, row in user_conf.iterrows():
+        user_dict = {
+            'name': row['meta_comment'],
+            'qnt': row['meta_dist'],
+            'settings': row.iloc[2:].to_dict()
+        }
+        user_settings.append(user_dict)
+    
+    return user_settings
+
+
+def generate_user_data_from_config(r: np.random.Generator, conf: dict) -> UserData:
+    return generate_user_data(r=r, **conf['settings'])
 
 
 def generate_user_data(

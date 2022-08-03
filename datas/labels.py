@@ -124,7 +124,7 @@ class UserLabeller:
 
         return score
 
-    def __call__(self, r: np.random.Generator, user: UserData, locations: list[LocationData]) -> int:
+    def __call__(self, r: np.random.Generator, user: UserData, locations: list[LocationData]) -> np.ndarray:
         """
         This function will process a list of possible locations assigning them a
         score. Then a explotation/exploration mechanism choose which location has 
