@@ -1,7 +1,33 @@
 import numpy as np
+import pandas as pd
 
 from api.requests import LocationData
 from datas.utils import sample_bool, sample_float
+
+
+def read_location_config(config: str) -> list[dict]:
+    """This function will read a file in TSV format that contains all the information
+    to generate different kind of location. Return a list of settings that can be used 
+    with the `generate_location_data_from_config` function.
+    
+    :param config:
+        A valid path to a TSV file.
+    """
+    loc_conf = pd.read_csv(config, sep='\t')
+    loc_settings = []
+    for _, row in loc_conf.iterrows():
+        loc_dict = {
+            'name': row['meta_comment'],
+            'qnt': row['meta_n'],
+            'settings': row.iloc[2:].to_dict()
+        }
+        loc_settings.append(loc_dict)
+
+    return loc_settings
+
+
+def generate_location_data_from_config(r: np.random.Generator, conf: dict) -> LocationData:
+    return generate_location_data(r=r, **conf['settings'])
 
 
 def generate_location_data(

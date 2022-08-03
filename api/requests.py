@@ -24,6 +24,7 @@ class UserData(BaseModel):
 
 
 class LocationData(BaseModel):
+    location_id: int = 0
     children: bool
     breakfast: bool
     lunch: bool

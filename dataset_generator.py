@@ -2,7 +2,7 @@
 import numpy as np
 import pandas as pd
 
-from datas import generate_location_data, generate_user_data, UserLabeller
+from datas import read_user_config, generate_user_data_from_config, read_location_config, generate_location_data_from_config, UserLabeller
 
 r = np.random.default_rng(42)
 
@@ -15,35 +15,14 @@ DATASET_LABEL = 'dataset/dataset_labelled.tsv'
 
 #%%
 
+# Read pandas into dicts
 print(f"Loading {USER_CONFIG}... ", end="")
-user_conf = pd.read_csv(USER_CONFIG, sep='\t')
+user_settings = read_user_config(USER_CONFIG)
 print("Done")
 
 print(f"Loading {LOC_CONFIG}... ", end="")
-loc_conf = pd.read_csv(LOC_CONFIG, sep='\t')
+loc_settings = read_location_config(LOC_CONFIG)
 print("Done")
-
-#%%
-
-# Convert pandas rows in dicts
-
-user_settings = []
-for _, row in user_conf.iterrows():
-    user_dict = {
-        'name': row['meta_comment'],
-        'qnt': row['meta_dist'],
-        'settings': row.iloc[2:].to_dict()
-    }
-    user_settings.append(user_dict)
-
-loc_settings = []
-for _, row in loc_conf.iterrows():
-    loc_dict = {
-        'name': row['meta_comment'],
-        'qnt': row['meta_n'],
-        'settings': row.iloc[2:].to_dict()
-    }
-    loc_settings.append(loc_dict)
 
 # %% -----------------------------------------------------------------------
 
@@ -55,7 +34,7 @@ user_data = []
 for user in user_settings:
     for s in range(user['qnt']):
         user_data.append(
-            generate_user_data(r, **user['settings'])
+            generate_user_data_from_config(r, user)
         )
 
 df_user = pd.DataFrame([x.dict() for x in user_data])
@@ -73,7 +52,7 @@ location_data = []
 for loc in loc_settings:
     for _ in range(loc['qnt']):
         location_data.append(
-            generate_location_data(r, **loc['settings'])
+            generate_location_data_from_config(r, loc)
         )
 
 # save all objects to a tab-separated value (TSV) file

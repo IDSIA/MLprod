@@ -76,7 +76,7 @@ location_id = result[0]['location_id']
 print('selected location_id =', location_id)
 
 u_result = requests.put(
-    url=f'{URL}/select/',
+    url=f'{URL}/inference/select/',
     headers={
         'accept': 'application/json',
         'Content-Type': 'application/json',

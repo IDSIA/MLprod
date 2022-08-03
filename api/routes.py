@@ -105,7 +105,7 @@ async def get_inference_results(task_id: str, limit: int=10, db: Session = Depen
     return crud.get_results_locations(db, task_id, limit)
 
 
-@api.put('/select/')
+@api.put('/inference/select/')
 async def get_click(label: requests.LabelData, db: Session = Depends(get_db)):
     """This is the endpoint used to simulate a click on a choice.
     A click will be registered as a label on the data"""
