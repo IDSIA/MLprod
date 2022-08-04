@@ -97,13 +97,14 @@ services:
       - DS_PROMETHEUS_URL=prometheus
       - DS_PROMETHEUS_PORT=9090
 
-      - DS_POSTGRES_URL=postgres
+      - DS_POSTGRES_URL=database
       - DS_POSTGRES_PORT=5432
       - DS_POSTGRES_USER=${DATABASE_USER}
       - DS_POSTGRES_PASSWORD=${DATABASE_PASS}
       - DS_POSTGRES_DB=${DATABASE_SCHEMA}
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
     ports: 
       - 3000:3000
     networks:
