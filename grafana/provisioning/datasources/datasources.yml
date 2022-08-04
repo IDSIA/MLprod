@@ -9,14 +9,14 @@ datasources:
     access: proxy
     orgId: 1
     uid: 4eegUEzVz
-    url: http://prometheus:9090
+    url: http://${DS_PROMETHEUS_URL}:${DS_PROMETHEUS_PORT}
     user:
     database:
     basicAuth: false
     isDefault: true
     readOnly: false
     jsonData: 
-        httpMethod: POST
+      httpMethod: POST
 
   - name: PostgreSQL
     type: postgres
@@ -25,16 +25,18 @@ datasources:
     access: proxy
     orgId: 1
     uid: zNqkUPk4k
-    url: database:5432
-    user: mlp
-    database: mlpdb
+    url: ${DS_POSTGRES_URL}:${DS_POSTGRES_PORT}
+    user: ${DS_POSTGRES_USER}
+    database: ${DS_POSTGRES_DB}
     basicAuth: false
     isDefault: false
     readOnly: false
     jsonData:
-        postgresVersion: 903
-        sslmode: disable
-        tlsAuth: false
-        tlsAuthWithCACert: false
-        tlsConfigurationMethod: file-path
-        tlsSkipVerify: true
+      postgresVersion: 903
+      sslmode: disable
+      tlsAuth: false
+      tlsAuthWithCACert: false
+      tlsConfigurationMethod: file-path
+      tlsSkipVerify: true
+    secureJsonData:
+      password: ${DS_POSTGRES_PASSWORD}

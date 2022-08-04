@@ -93,11 +93,22 @@ services:
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASS}
       - GF_USERS_ALLOW_SIGN_UP=false
+
+      - DS_PROMETHEUS_URL=prometheus
+      - DS_PROMETHEUS_PORT=9090
+
+      - DS_POSTGRES_URL=postgres
+      - DS_POSTGRES_PORT=5432
+      - DS_POSTGRES_USER=${DATABASE_USER}
+      - DS_POSTGRES_PASSWORD=${DATABASE_PASS}
+      - DS_POSTGRES_DB=${DATABASE_SCHEMA}
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
     ports: 
       - 3000:3000
     networks:
-      - www
       - mlpnet
+      - www
     depends_on:
       - database
       - prometheus

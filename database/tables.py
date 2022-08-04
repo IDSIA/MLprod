@@ -10,7 +10,7 @@ from .database import Base
 class User(Base):
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
-    creation_timestamp = Column(DateTime(timezone=True), server_default=now())
+    creation_time = Column(DateTime(timezone=True), server_default=now())
     people_num = Column(Integer, nullable=False)
     children = Column(Integer, nullable=False)
     age_avg = Column(Float, nullable=False)
@@ -31,7 +31,7 @@ class User(Base):
 class Location(Base):
     __tablename__ = 'locations'
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
-    creation_timestamp = Column(DateTime(timezone=True), server_default=now())
+    creation_time = Column(DateTime(timezone=True), server_default=now())
     lat = Column(Float, nullable=True)
     lon = Column(Float, nullable=True)
     children = Column(Boolean, nullable=False)
