@@ -1,0 +1,42 @@
+apiVersion: 1
+
+# list of datasources to insert/update depending what's available in the database
+datasources:
+  - name: Prometheus
+    type: prometheus
+    typeName: Prometheus
+    typeLogoUrl: public/app/plugins/datasource/prometheus/img/prometheus_logo.svg
+    access: proxy
+    orgId: 1
+    uid: 4eegUEzVz
+    url: http://${DS_PROMETHEUS_URL}:${DS_PROMETHEUS_PORT}
+    user:
+    database:
+    basicAuth: false
+    isDefault: true
+    readOnly: false
+    jsonData: 
+      httpMethod: POST
+
+  - name: PostgreSQL
+    type: postgres
+    typeName: PostgreSQL
+    typeLogoUrl: public/app/plugins/datasource/postgres/img/postgresql_logo.svg
+    access: proxy
+    orgId: 1
+    uid: zNqkUPk4k
+    url: ${DS_POSTGRES_URL}:${DS_POSTGRES_PORT}
+    user: ${DS_POSTGRES_USER}
+    database: ${DS_POSTGRES_DB}
+    basicAuth: false
+    isDefault: false
+    readOnly: false
+    jsonData:
+      postgresVersion: 903
+      sslmode: disable
+      tlsAuth: false
+      tlsAuthWithCACert: false
+      tlsConfigurationMethod: file-path
+      tlsSkipVerify: true
+    secureJsonData:
+      password: ${DS_POSTGRES_PASSWORD}

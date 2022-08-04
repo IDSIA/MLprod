@@ -10,3 +10,7 @@ stop:
 reload:
 	docker-compose build
 	docker-compose up -d
+
+grafana:
+	dcoker-compose stop grafana
+	docker-compose start grafana
