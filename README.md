@@ -51,3 +51,8 @@ docker-compose up -d
 * [Instrumentation | Prometheus](https://prometheus.io/docs/practices/instrumentation/#counter-vs-gauge-summary-vs-histogram)
 * [prometheus/client_python | GitHub](https://github.com/prometheus/client_python)
 * [kozhushman/prometheusrock | GitHub](https://github.com/kozhushman/prometheusrock)
+
+### Grafana
+* [Provision Grafana](https://grafana.com/docs/grafana/latest/administration/provisioning/)
+* [Data Source on Startup](https://community.grafana.com/t/data-source-on-startup/8618/2)
+* [Authentication API](https://grafana.com/docs/grafana/latest/developers/http_api/auth/)
