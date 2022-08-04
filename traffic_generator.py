@@ -73,7 +73,7 @@ class Sleeper:
 def inference_start(url: str, user: UserData) -> str:
     data = user.dict()
     data['time_arrival'] = str(data['time_arrival'])
-    p_data = requests.post(
+    response = requests.post(
         url=f'{url}/inference/start', 
         headers={
             'accept': 'application/json',
@@ -82,30 +82,39 @@ def inference_start(url: str, user: UserData) -> str:
         json=data,
     )
 
-    return p_data.json()['task_id']
+    if response.status_code != 200:
+        raise ValueError(f'Inference start: {response.status_code}')
+
+    return response.json()['task_id']
 
 
 def inference_status(url: str, task_id: str) -> bool:
-    g_status = requests.get(
+    response = requests.get(
         url=f'{url}/inference/status/{task_id}',
         headers={
             'accept': 'application/json',
         },
     )
 
-    status = g_status.json()
+    if response.status_code != 200:
+        raise ValueError(f'Inference status: {response.status_code}')
+
+    status = response.json()
     return status['status']
 
 
 def inference_results(url: str, task_id: str) -> dict:
-    g_results = requests.get(
+    response = requests.get(
         url=f'{url}/inference/results/{task_id}',
         headers={
             'accept': 'application/json',
         },
     )
 
-    data = g_results.json()
+    if response.status_code != 200:
+        raise ValueError(f'Inference results: {response.status_code}')
+
+    data = response.json()
     return [LocationData(**d) for d in data]
 
 
@@ -125,9 +134,33 @@ def make_choice(url: str, task_id: str, location_id: int) -> dict:
     return u_result.json()
 
 
-def exec(args) -> None:
-    """"""
-    N, seed, config, url, thread, a, b, t_min, t_max = args
+def exec_wrapper(args):
+    """Just a wrapper for multiprocessing pool for the `exec` method."""
+    return exec(*args)
+
+
+def exec(N: int, seed: int, config: str, url: str, thread: int, a: float, b: float, t_min: float, t_max: float) -> None:
+    """Perform the traffic generation for one worker.
+    
+    :param N:
+        Number of request to generate.
+    :param seed:
+        Random seed to use.
+    :param config:
+        Location of the user configuration file.
+    :param url:
+        The requests will be sent to this endpoint.
+    :param thread:
+        Number of this thread (for logging purposes).
+    :param a:
+        Parameter a for beta distribution (used for delays).
+    :param b:
+        Parameter b for beta distribution (used for delays).
+    :param t_min:
+        Minimum time to consider for delay (in seconds).
+    :param t_max:
+        Maximum time to consider for delay (in seconds).
+    """
 
     r = np.random.default_rng(seed=seed)
     user_configs = read_user_config(config)
@@ -136,48 +169,50 @@ def exec(args) -> None:
 
     n = 1 if N is None else N
     while n > 0:
-        # choose next user ----------------------------------------
-        user_config = r.choice(user_configs)
+        try:
+            # choose next user ----------------------------------------
+            user_config = r.choice(user_configs)
 
-        logging.info(f'{thread:02} User: {user_config["name"]}')
+            logging.info(f'{thread:02} User: {user_config["name"]}')
 
-        sl.sleep(r, thread)
-
-        user = generate_user_data_from_config(r, user_config)
-
-        # send new inference request ------------------------------
-        task_id = inference_start(url, user)
-
-        logging.info(f'{thread:02} Task id assigned: {task_id}')
-
-        # send task get request -----------------------------------
-        done = False
-        while not done:
             sl.sleep(r, thread)
-            status = inference_status(url, task_id)
 
-            logging.info(f'{thread:02} Request status: {status}')
-            done = status == 'SUCCESS'
+            user = generate_user_data_from_config(r, user_config)
 
+            # send new inference request ------------------------------
+            task_id = inference_start(url, user)
 
-        locations = inference_results(url, task_id)
+            logging.info(f'{thread:02} Task id assigned: {task_id}')
 
-        # Make choice ---------------------------------------------
-        labels = ul(r, user, locations)
-        location_ids = np.array([l.location_id for l in locations])
+            # send task get request -----------------------------------
+            done = False
+            while not done:
+                sl.sleep(r, thread)
+                status = inference_status(url, task_id)
 
-        location_id = int(r.choice(location_ids[labels == 1]))
-        
-        logging.info(f'{thread:02} Choosen location with id {location_id}')
+                logging.info(f'{thread:02} Request status: {status}')
+                done = status == 'SUCCESS'
 
-        # Register choice -----------------------------------------
-        sl.sleep(r, thread)
-        make_choice(url, task_id, location_id)
+            locations = inference_results(url, task_id)
 
-        # next request --------------------------------------------
-        if N is not None:
-            n -= 1
+            # Make choice ---------------------------------------------
+            labels = ul(r, user, locations)
+            location_ids = np.array([l.location_id for l in locations])
 
+            location_id = int(r.choice(location_ids[labels == 1]))
+            
+            logging.info(f'{thread:02} Choosen location with id {location_id}')
+
+            # Register choice -----------------------------------------
+            sl.sleep(r, thread)
+            make_choice(url, task_id, location_id)
+
+            # next request --------------------------------------------
+            if N is not None:
+                n -= 1
+        except ValueError as e:
+            logging.error(f'Request failed: {e}')
+            sl.sleep(r, thread)
 
 if __name__ == '__main__':
     from dotenv import load_dotenv
@@ -214,4 +249,4 @@ if __name__ == '__main__':
     logging.info(f'Starting traffic generation with {workers} worker(s)')
 
     with Pool(processes=workers) as pool:
-        pool.map(exec, params)
+        pool.map(exec_wrapper, params)
