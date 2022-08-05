@@ -3,6 +3,8 @@ from time import sleep
 from api.requests import LocationData, UserData
 from datas import read_user_config, generate_user_data_from_config, UserLabeller
 
+import multiprocessing
+import signal
 import numpy as np
 import requests
 import argparse
@@ -11,7 +13,7 @@ import os
 
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s %(name)s %(levelname)s %(message)s',
+    format='%(asctime)s %(name)s %(levelname)5s %(message)s',
 )
 
 
@@ -55,7 +57,7 @@ class Sleeper:
     def active(self, flag: bool) -> None:
         self.flag = flag
 
-    def sleep(self, r: np.random.Generator, thread: int=0):
+    def __call__(self, r: np.random.Generator, thread: int=0):
         """Add some delay in the system.
         
         :param r:
@@ -70,154 +72,156 @@ class Sleeper:
             sleep(time)
 
 
-def inference_start(url: str, user: UserData) -> str:
-    data = user.dict()
-    data['time_arrival'] = str(data['time_arrival'])
-    response = requests.post(
-        url=f'{url}/inference/start', 
-        headers={
-            'accept': 'application/json',
-            'Content-Type': 'application/json',
-        },
-        json=data,
-    )
+class TrafficGenerator(multiprocessing.Process):
 
-    if response.status_code != 200:
-        raise ValueError(f'Inference start: {response.status_code}')
+    def __init__(self, seed: int, config: str, url: str, thread: int, a: float, b: float, t_min: float, t_max: float, event: multiprocessing.Event) -> None:
+        """Perform the traffic generation for one worker.
+        
+        :param N:
+            Number of request to generate.
+        :param seed:
+            Random seed to use.
+        :param config:
+            Location of the user configuration file.
+        :param url:
+            The requests will be sent to this endpoint.
+        :param thread:
+            Number of this thread (for logging purposes).
+        :param a:
+            Parameter a for beta distribution (used for delays).
+        :param b:
+            Parameter b for beta distribution (used for delays).
+        :param t_min:
+            Minimum time to consider for delay (in seconds).
+        :param t_max:
+            Maximum time to consider for delay (in seconds).
+        """
+        super().__init__()
 
-    return response.json()['task_id']
+        self.random = np.random.default_rng(seed=seed)
+        self.user_configs = read_user_config(config)
+        self.ul = UserLabeller()
+        self.sleep = Sleeper(a, b, t_min, t_max)
+        self.thread = thread
+        self.url = url
+        self.event = event
 
+    def inference_start(self, user: UserData) -> str:
+        data = user.dict()
+        data['time_arrival'] = str(data['time_arrival'])
+        response = requests.post(
+            url=f'{self.url}/inference/start', 
+            headers={
+                'accept': 'application/json',
+                'Content-Type': 'application/json',
+            },
+            json=data,
+        )
 
-def inference_status(url: str, task_id: str) -> bool:
-    response = requests.get(
-        url=f'{url}/inference/status/{task_id}',
-        headers={
-            'accept': 'application/json',
-        },
-    )
+        if response.status_code != 200:
+            raise ValueError(f'Inference start: {response.status_code}')
 
-    if response.status_code != 200:
-        raise ValueError(f'Inference status: {response.status_code}')
-
-    status = response.json()
-    return status['status']
-
-
-def inference_results(url: str, task_id: str) -> dict:
-    response = requests.get(
-        url=f'{url}/inference/results/{task_id}',
-        headers={
-            'accept': 'application/json',
-        },
-    )
-
-    if response.status_code != 200:
-        raise ValueError(f'Inference results: {response.status_code}')
-
-    data = response.json()
-    return [LocationData(**d) for d in data]
-
-
-def make_choice(url: str, task_id: str, location_id: int) -> dict:
-    u_result = requests.put(
-        url=f'{url}/inference/select/',
-        headers={
-            'accept': 'application/json',
-            'Content-Type': 'application/json',
-        },
-        json={
-            'task_id': task_id,
-            'location_id': location_id,
-        },
-    )
-
-    return u_result.json()
+        return response.json()['task_id']
 
 
-def exec_wrapper(args):
-    """Just a wrapper for multiprocessing pool for the `exec` method."""
-    return exec(*args)
+    def inference_status(self, task_id: str) -> bool:
+        response = requests.get(
+            url=f'{self.url}/inference/status/{task_id}',
+            headers={
+                'accept': 'application/json',
+            },
+        )
+
+        if response.status_code != 200:
+            raise ValueError(f'Inference status: {response.status_code}')
+
+        status = response.json()
+        return status['status']
 
 
-def exec(N: int, seed: int, config: str, url: str, thread: int, a: float, b: float, t_min: float, t_max: float) -> None:
-    """Perform the traffic generation for one worker.
-    
-    :param N:
-        Number of request to generate.
-    :param seed:
-        Random seed to use.
-    :param config:
-        Location of the user configuration file.
-    :param url:
-        The requests will be sent to this endpoint.
-    :param thread:
-        Number of this thread (for logging purposes).
-    :param a:
-        Parameter a for beta distribution (used for delays).
-    :param b:
-        Parameter b for beta distribution (used for delays).
-    :param t_min:
-        Minimum time to consider for delay (in seconds).
-    :param t_max:
-        Maximum time to consider for delay (in seconds).
-    """
+    def inference_results(self, task_id: str) -> dict:
+        response = requests.get(
+            url=f'{self.url}/inference/results/{task_id}',
+            headers={
+                'accept': 'application/json',
+            },
+        )
 
-    r = np.random.default_rng(seed=seed)
-    user_configs = read_user_config(config)
-    ul = UserLabeller()
-    sl = Sleeper(a, b, t_min, t_max)
+        if response.status_code != 200:
+            raise ValueError(f'Inference results: {response.status_code}')
 
-    n = 1 if N is None else N
-    while n > 0:
-        try:
-            # choose next user ----------------------------------------
-            user_config = r.choice(user_configs)
+        data = response.json()
+        return [LocationData(**d) for d in data]
 
-            logging.info(f'{thread:02} User: {user_config["name"]}')
 
-            sl.sleep(r, thread)
+    def make_choice(self, task_id: str, location_id: int) -> dict:
+        u_result = requests.put(
+            url=f'{self.url}/inference/select/',
+            headers={
+                'accept': 'application/json',
+                'Content-Type': 'application/json',
+            },
+            json={
+                'task_id': task_id,
+                'location_id': location_id,
+            },
+        )
 
-            user = generate_user_data_from_config(r, user_config)
+        return u_result.json()
 
-            # send new inference request ------------------------------
-            task_id = inference_start(url, user)
 
-            logging.info(f'{thread:02} Task id assigned: {task_id}')
+    def run(self) -> None:
+        thread = self.thread
+        r = self.random
 
-            # send task get request -----------------------------------
-            done = False
-            while not done:
-                sl.sleep(r, thread)
-                status = inference_status(url, task_id)
+        while not self.event.is_set():
+            try:
+                # choose next user ----------------------------------------
+                user_config = r.choice(self.user_configs)
 
-                logging.info(f'{thread:02} Request status: {status}')
-                done = status == 'SUCCESS'
+                logging.info(f'{thread:02} User: {user_config["name"]}')
 
-            locations = inference_results(url, task_id)
+                self.sleep(r, thread)
 
-            # Make choice ---------------------------------------------
-            labels = ul(r, user, locations)
-            location_ids = np.array([l.location_id for l in locations])
+                user = generate_user_data_from_config(r, user_config)
 
-            location_id = int(r.choice(location_ids[labels == 1]))
-            
-            logging.info(f'{thread:02} Choosen location with id {location_id}')
+                # send new inference request ------------------------------
+                task_id = self.inference_start(user)
 
-            # Register choice -----------------------------------------
-            sl.sleep(r, thread)
-            make_choice(url, task_id, location_id)
+                logging.info(f'{thread:02} Task id assigned: {task_id}')
 
-            # next request --------------------------------------------
-            if N is not None:
-                n -= 1
-        except ValueError as e:
-            logging.error(f'Request failed: {e}')
-            sl.sleep(r, thread)
+                # send task get request -----------------------------------
+                done = False
+                while not done:
+                    self.sleep(r, thread)
+                    status = self.inference_status(task_id)
+
+                    logging.info(f'{thread:02} Request status: {status}')
+                    done = status == 'SUCCESS'
+
+                locations = self.inference_results(task_id)
+
+                # Make choice ---------------------------------------------
+                labels = self.ul(r, user, locations)
+                location_ids = np.array([l.location_id for l in locations])
+
+                location_id = int(r.choice(location_ids[labels == 1]))
+                
+                logging.info(f'{thread:02} Choosen location with id {location_id}')
+
+                # Register choice -----------------------------------------
+                self.sleep(r, thread)
+                self.make_choice(task_id, location_id)
+
+            except ValueError as e:
+                logging.error(f'Request failed: {e}')
+                self.sleep(r, thread)
+
+        logging.info(f'{self.thread:02} completed')
+
 
 if __name__ == '__main__':
     from dotenv import load_dotenv
-    from multiprocessing import Pool, set_start_method
-    set_start_method('spawn')
 
     # Environment variables are controlled through a .env file
     load_dotenv()
@@ -230,23 +234,33 @@ if __name__ == '__main__':
 
     args = setup_arguments()
 
-    r = np.random.default_rng(args.seed)
+    event = multiprocessing.Event()
 
-    workers = min(os.cpu_count(), args.p)
+    def main_signal_handler(signum, frame):
+        if not event.is_set():
+            logging.info('Received stop signal')
+            event.set()
 
-    params = [(
-        args.n, 
-        args.seed+i, 
-        args.config, 
-        URL, 
-        i+1,
-        args.a,
-        args.b,
-        args.tmin,
-        args.tmax,
-    ) for i in range(workers)]
+    signal.signal(signal.SIGINT, main_signal_handler)
+    signal.signal(signal.SIGTERM, main_signal_handler)
 
-    logging.info(f'Starting traffic generation with {workers} worker(s)')
+    n_workers = min(os.cpu_count(), args.p)
 
-    with Pool(processes=workers) as pool:
-        pool.map(exec_wrapper, params)
+    workers = [
+        TrafficGenerator(
+            args.seed+i, 
+            args.config, 
+            URL, 
+            i+1,
+            args.a,
+            args.b,
+            args.tmin,
+            args.tmax,
+            event,
+        ) for i in range(n_workers)
+    ]
+
+    logging.info(f'Starting traffic generation with {n_workers} worker(s)')
+
+    for w in workers:
+        w.start()
