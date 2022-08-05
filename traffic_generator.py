@@ -25,6 +25,7 @@ def setup_arguments():
     parser.add_argument('-n', help='Number of requests to do, 0 means infinite', default=None, type=int)
     parser.add_argument('--no-sleep', help='If set, no sleeps are used', default=False, action='store_true')
     parser.add_argument('--config', help='User config file to use', default='./config/user.tsv', type=str)
+    parser.add_argument('-d', help='Decision level, the amount of responses that will also have a feedback (set a label)', default=1.0, type=float)
     parser.add_argument('-p', help='Number of parallel generators.', default=1, type=int)
     parser.add_argument('-a', help='Parameter `a` of beta function', default=2., type=float)
     parser.add_argument('-b', help='Parameter `b` of beta function', default=5., type=float)
@@ -74,7 +75,18 @@ class Sleeper:
 
 class TrafficGenerator(multiprocessing.Process):
 
-    def __init__(self, seed: int, config: str, url: str, thread: int, a: float, b: float, t_min: float, t_max: float, event: multiprocessing.Event) -> None:
+    def __init__(self, 
+            seed: int, 
+            config: str, 
+            url: str, 
+            thread: int, 
+            a: float, 
+            b: float, 
+            t_min: float, 
+            t_max: float, 
+            decision: float,
+            event: multiprocessing.Event
+        ) -> None:
         """Perform the traffic generation for one worker.
         
         :param N:
@@ -105,6 +117,7 @@ class TrafficGenerator(multiprocessing.Process):
         self.thread = thread
         self.url = url
         self.event = event
+        self.decision = decision
 
     def inference_start(self, user: UserData) -> str:
         data = user.dict()
@@ -123,7 +136,6 @@ class TrafficGenerator(multiprocessing.Process):
 
         return response.json()['task_id']
 
-
     def inference_status(self, task_id: str) -> bool:
         response = requests.get(
             url=f'{self.url}/inference/status/{task_id}',
@@ -137,7 +149,6 @@ class TrafficGenerator(multiprocessing.Process):
 
         status = response.json()
         return status['status']
-
 
     def inference_results(self, task_id: str) -> dict:
         response = requests.get(
@@ -153,7 +164,6 @@ class TrafficGenerator(multiprocessing.Process):
         data = response.json()
         return [LocationData(**d) for d in data]
 
-
     def make_choice(self, task_id: str, location_id: int) -> dict:
         u_result = requests.put(
             url=f'{self.url}/inference/select/',
@@ -168,7 +178,6 @@ class TrafficGenerator(multiprocessing.Process):
         )
 
         return u_result.json()
-
 
     def run(self) -> None:
         thread = self.thread
@@ -202,12 +211,13 @@ class TrafficGenerator(multiprocessing.Process):
                 locations = self.inference_results(task_id)
 
                 # Make choice ---------------------------------------------
-                labels = self.ul(r, user, locations)
-                location_ids = np.array([l.location_id for l in locations])
+                if r.uniform() < self.decision:
+                    labels = self.ul(r, user, locations)
+                    location_ids = np.array([l.location_id for l in locations])
 
-                location_id = int(r.choice(location_ids[labels == 1]))
-                
-                logging.info(f'{thread:02} Choosen location with id {location_id}')
+                    location_id = int(r.choice(location_ids[labels == 1]))
+                    
+                    logging.info(f'{thread:02} Choosen location with id {location_id}')
 
                 # Register choice -----------------------------------------
                 self.sleep(r, thread)
@@ -256,6 +266,7 @@ if __name__ == '__main__':
             args.b,
             args.tmin,
             args.tmax,
+            args.d,
             event,
         ) for i in range(n_workers)
     ]
