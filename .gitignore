@@ -22,5 +22,4 @@ __pycache__
 workbench.py
 
 !config/**
-models/*.model
-models/*.json
+models/**

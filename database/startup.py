@@ -1,5 +1,5 @@
-from .tables import User, Location, Dataset, Inference, Result, Event
-from .crud import count_locations
+from .tables import User, Location, Dataset, Inference, Result, Event, Model
+from .crud import count_locations, count_models, create_model
 from sqlalchemy.orm import Session
 
 import numpy as np
@@ -11,7 +11,7 @@ def init_content(db: Session):
     Initialize all the tables in the database, if they do not exists.
 
     :param db:
-      Session with the connection to the database."""
+        Session with the connection to the database."""
     engine = db.get_bind()
     
     User.__table__.create(bind=engine, checkfirst=True)
@@ -23,6 +23,8 @@ def init_content(db: Session):
 
     Event.__table__.create(bind=engine, checkfirst=True)
 
+    Model.__table__.create(bind=engine, checkfirst=True)
+
     n_locations = count_locations(db)
 
     if n_locations == 0:
@@ -31,4 +33,10 @@ def init_content(db: Session):
 
         db.bulk_insert_mappings(Location, df.to_dict(orient='records'))
         db.commit()
-        db.close()
+
+    n_models = count_models(db)
+
+    if n_models == 0:
+        create_model(db, '/app/models/original/', {}, 1.0)
+        
+    db.close()

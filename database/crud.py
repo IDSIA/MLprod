@@ -4,7 +4,7 @@ import pandas as pd
 from sqlalchemy.orm import Session
 
 from datetime import datetime
-from .tables import Location, Inference, Event, Result, User
+from .tables import Location, Inference, Event, Result, User, Model
 
 
 def create_user_data(db: Session, user_data: dict) -> User:
@@ -177,6 +177,23 @@ def update_result_label(db: Session, task_id: str, location_id: int) -> Result:
     db.refresh(db_result)
 
     return db_result
+
+
+def create_model(db: Session, path: str, metrics: dict[str, float], use_percentage: float=.0) -> Model:
+    db_model = Model(path=path, use_percentage=use_percentage, **metrics)
+    db.add(db_model)
+    db.commit()
+    db.refresh(db_model)
+    return db_model
+
+
+def get_best_model(db: Session) -> Model:
+    # TODO: this should return a list of models, then who call it choose what to load
+    return db.query(Model).filter(Model.use_percentage > 0).first()
+
+
+def count_models(db: Session) -> int:
+    return db.query(Model).count()
 
 
 def create_event(db: Session, event: str) -> Event:
