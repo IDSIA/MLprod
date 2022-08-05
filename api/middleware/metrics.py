@@ -20,7 +20,7 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
     def __init__(self, 
             app: ASGIApp, 
             app_name:str='ASGIApp',
-            skip_paths: list[str]=['/metrics', '/docs']
+            skip_paths: list[str]=['/metrics', '/docs', '/favicon.ico']
     ) -> None:
         super().__init__(app)
         labels = ['method', 'path', 'status_code', 'app_name']

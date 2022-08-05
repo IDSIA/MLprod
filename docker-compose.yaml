@@ -40,8 +40,7 @@ services:
     networks:
       - mlpnet
       - www
-    ports:
-      - 15432:5432
+    # ports: 5432
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.monitordb.rule=Host(`monitordb.${DOMAIN}`)"
@@ -58,6 +57,8 @@ services:
       - CELERY_BROKER_URL=${CELERY_BROKER_URL}
       - CELERY_QUEUE=${CELERY_QUEUE}
       - DATABASE_URL=postgresql://${DATABASE_USER}:${DATABASE_PASS}@${DATABASE_HOST}/${DATABASE_SCHEMA}
+    volumes:
+      - ./models:/app/models
     networks:
       - mlpnet
     depends_on:
@@ -74,8 +75,7 @@ services:
       - CELERY_BACKEND_URL=${CELERY_BACKEND_URL}
       - CELERY_BROKER_URL=${CELERY_BROKER_URL}
       - DATABASE_URL=postgresql://${DATABASE_USER}:${DATABASE_PASS}@${DATABASE_HOST}/${DATABASE_SCHEMA}
-    ports:
-      - 4789:4789
+    # ports: 4789
     networks:
       - www
       - mlpnet
@@ -105,8 +105,7 @@ services:
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning
       - ./grafana/dashboards:/var/lib/grafana/dashboards
-    ports: 
-      - 3000:3000
+    # ports: 3000
     networks:
       - mlpnet
       - www

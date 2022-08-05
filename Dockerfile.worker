@@ -22,6 +22,5 @@ WORKDIR /app
 
 COPY database/ database/
 COPY worker/ worker/
-COPY models/ models/
 
 CMD ["celery", "-A", "worker.celery", "worker", "-l", "INFO"]
