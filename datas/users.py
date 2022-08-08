@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from api.requests import UserData
+from datas.labels import UserLabeller
 
 from datas.utils import sample_bool, sample_float, sample_int
 
@@ -19,11 +20,16 @@ def read_user_config(config: str) -> list[dict]:
         user_dict = {
             'name': row['meta_comment'],
             'qnt': row['meta_dist'],
-            'settings': row.iloc[2:].to_dict()
+            'settings': row.iloc[2:16].to_dict(),
+            'labels': row.iloc[17:].to_dict(),
         }
         user_settings.append(user_dict)
     
     return user_settings
+
+
+def generate_user_labeller_from_config(conf: dict) -> UserLabeller:
+    return UserLabeller(**conf['labels'])
 
 
 def generate_user_data_from_config(r: np.random.Generator, conf: dict) -> UserData:

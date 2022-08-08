@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 
 from datas import read_user_config, generate_user_data_from_config, read_location_config, generate_location_data_from_config, UserLabeller
+from datas.users import generate_user_labeller_from_config
 
 r = np.random.default_rng(42)
 
@@ -33,9 +34,10 @@ user_data = []
 # generic user
 for user in user_settings:
     for s in range(user['qnt']):
-        user_data.append(
-            generate_user_data_from_config(r, user)
-        )
+        user_data.append((
+            generate_user_data_from_config(r, user),
+            generate_user_labeller_from_config(user),
+        ))
 
 df_user = pd.DataFrame([x.dict() for x in user_data])
 df_user.to_csv(DATASET_USER, index=False, header=True, sep='\t')
@@ -65,12 +67,10 @@ print("Done")
 
 print("Labelling data... ", end="")
 
-ul = UserLabeller()
-
 ml_data = []
 users = r.choice(user_data, 1000).tolist()
 
-for user in users:
+for user, ul in users:
     locs = r.choice(location_data, 10).tolist()
     scores = ul(r, user, locs)
 

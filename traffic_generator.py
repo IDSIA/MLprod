@@ -11,6 +11,8 @@ import argparse
 import logging
 import os
 
+from datas.users import generate_user_labeller_from_config
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s %(name)s %(levelname)5s %(message)s',
@@ -35,44 +37,6 @@ def setup_arguments():
     return parser.parse_args()
 
 
-class Sleeper:
-    def __init__(self, a: float, b: float, t_min: int, t_max: int, flag: bool=True) -> None:
-        """
-        :param a:
-            Parameter a for beta function.
-        :param b:
-            Parameter b for beta function.
-        :param t_min:
-            Minimum time to wait in seconds (fractions of seconds mean milliseconds).
-        :param t_max:
-            Maximum time to wait in seconds (fractions of seconds mean milliseconds).
-        :param flag:
-            If false, the wait is not applied.
-        """
-        self.a = a
-        self.b = b
-        self.t_min = t_min
-        self.t_max = t_max
-        self.flag = flag
-    
-    def active(self, flag: bool) -> None:
-        self.flag = flag
-
-    def __call__(self, r: np.random.Generator, thread: int=0):
-        """Add some delay in the system.
-        
-        :param r:
-            Random generator.
-        :param thread:
-            Index of the current thread.
-        """
-        if self.flag:
-            time =  self.t_min + r.beta(self.a, self.b) * (self.t_max - self.t_min)
-
-            logging.info(f'{thread:02} Sleeping for {time*1000:.0f}ms')
-            sleep(time)
-
-
 class TrafficGenerator(multiprocessing.Process):
 
     def __init__(self, 
@@ -85,7 +49,8 @@ class TrafficGenerator(multiprocessing.Process):
             t_min: float, 
             t_max: float, 
             decision: float,
-            event: multiprocessing.Event
+            event: multiprocessing.Event,
+            flag: bool=False,
         ) -> None:
         """Perform the traffic generation for one worker.
         
@@ -107,17 +72,28 @@ class TrafficGenerator(multiprocessing.Process):
             Minimum time to consider for delay (in seconds).
         :param t_max:
             Maximum time to consider for delay (in seconds).
+        :param flag:
+            Sleep flag, if True disable all sleeps.
         """
         super().__init__()
 
         self.random = np.random.default_rng(seed=seed)
         self.user_configs = read_user_config(config)
-        self.ul = UserLabeller()
-        self.sleep = Sleeper(a, b, t_min, t_max)
         self.thread = thread
         self.url = url
         self.event = event
         self.decision = decision
+        self.a = a
+        self.b = b
+        self.t_min = t_min
+        self.t_max = t_max
+        self.flag = flag
+
+    def sleep(self):
+        time =  self.t_min + self.random.beta(self.a, self.b) * (self.t_max - self.t_min)
+
+        logging.info(f'{self.thread:02} Sleeping for {time*1000:.0f}ms')
+        sleep(time)
 
     def inference_start(self, user: UserData) -> str:
         data = user.dict()
@@ -190,9 +166,10 @@ class TrafficGenerator(multiprocessing.Process):
 
                 logging.info(f'{thread:02} User: {user_config["name"]}')
 
-                self.sleep(r, thread)
+                self.sleep()
 
                 user = generate_user_data_from_config(r, user_config)
+                ul = generate_user_labeller_from_config(user_config)
 
                 # send new inference request ------------------------------
                 task_id = self.inference_start(user)
@@ -202,30 +179,31 @@ class TrafficGenerator(multiprocessing.Process):
                 # send task get request -----------------------------------
                 done = False
                 while not done:
-                    self.sleep(r, thread)
+                    self.sleep()
                     status = self.inference_status(task_id)
 
                     logging.info(f'{thread:02} Request status: {status}')
                     done = status == 'SUCCESS'
 
                 locations = self.inference_results(task_id)
-
+                location_id = -1
                 # Make choice ---------------------------------------------
                 if r.uniform() < self.decision:
-                    labels = self.ul(r, user, locations)
-                    location_ids = np.array([l.location_id for l in locations])
+                    labels = ul(r, user, locations)
 
-                    location_id = int(r.choice(location_ids[labels == 1]))
+                    if labels.sum() > 0:
+                        location_ids = np.array([l.location_id for l in locations])
+                        location_id = int(r.choice(location_ids[labels == 1]))
                     
                     logging.info(f'{thread:02} Choosen location with id {location_id}')
 
                 # Register choice -----------------------------------------
-                self.sleep(r, thread)
+                self.sleep()
                 self.make_choice(task_id, location_id)
 
             except ValueError as e:
                 logging.error(f'Request failed: {e}')
-                self.sleep(r, thread)
+                self.sleep()
 
         logging.info(f'{self.thread:02} completed')
 
