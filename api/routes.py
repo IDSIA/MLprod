@@ -11,6 +11,7 @@ from database.database import SessionLocal
 from database import crud, startup
 
 from worker.tasks.inference import inference
+from worker.tasks.train import training
 
 
 api = FastAPI()
@@ -56,13 +57,14 @@ async def schedule_inference(user_data: requests.UserData, db: Session = Depends
     task: AsyncResult = inference.delay(ud.id)
 
     db_inf = crud.create_inference(db, task.task_id, task.status)
-    return requests.InferenceStatus(
+    return requests.TaskStatus(
         task_id=db_inf.task_id,
         status=db_inf.status,
+        type='inference'
     )
 
 
-@api.get('/inference/status/{task_id}', response_model=requests.InferenceStatus)
+@api.get('/inference/status/{task_id}', response_model=requests.TaskStatus)
 async def get_inference_status(task_id: str, db: Session = Depends(get_db)):
     """This si the endpoint to get the results of an inference."""
     crud.create_event(db, 'status')
@@ -82,12 +84,12 @@ async def get_inference_status(task_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail='Task failed')
 
     if not task.ready():
-        return requests.InferenceStatus(
+        return requests.TaskStatus(
             task_id=db_inf.task_id,
             status=db_inf.status,
         )
 
-    return requests.InferenceStatus(
+    return requests.TaskStatus(
         task_id=db_inf.task_id,
         status=db_inf.status,
     )
@@ -127,6 +129,20 @@ async def get_click(label: requests.LabelData, db: Session = Depends(get_db)):
             return HTTPException(404, f"Result not found: invalid task_id or location_id")
 
         return db_result
+
+
+@api.post('/train/start')
+async def schedule_training(db: Session = Depends(get_db)):
+    crud.create_event(db, 'training')
+
+    task: AsyncResult = training.delay()
+
+    db_model = crud.create_model(db, task.task_id, task.status)
+    return requests.TaskStatus(
+        task_id=db_model.task_id,
+        status=db_model.status,
+        type='training'
+    )
 
 
 @api.get('/content/info')

@@ -1,10 +1,11 @@
 import numpy as np
 import pandas as pd
+import uuid
 
 from sqlalchemy.orm import Session
 
 from datetime import datetime
-from .tables import Location, Inference, Event, Result, User, Model
+from .tables import Dataset, Location, Inference, Event, Result, User, Model
 
 
 def create_user_data(db: Session, user_data: dict) -> User:
@@ -160,6 +161,7 @@ def mark_locations_as_shown(db: Session, task_id: str, locations: list[dict]) ->
 
     return db_locations
 
+
 def get_results(db: Session, task_id: int) -> list[Result]:
     return db.query(Result).filter(Result.task_id == task_id).all()
 
@@ -191,11 +193,47 @@ def update_result_label(db: Session, task_id: str, location_id: int) -> Result:
     return db_result
 
 
-def create_model(db: Session, path: str, metrics: dict[str, float], use_percentage: float=.0) -> Model:
-    db_model = Model(path=path, use_percentage=use_percentage, **metrics)
+def create_dataset(db: Session, size: int) -> list:
+    
+    db_data = (
+        db.query(Result)
+        .filter(Result.shown)
+        .order_by(Result.id.desc())
+        .limit(size)
+        .join(Location, Result.location_id == Location.id)
+        .join(User, Result.user_id == User.id)
+        .all()
+    )
+
+    id = str(uuid.uuid4())
+    now = datetime.now()
+
+    for data in db_data:
+        db.add(Dataset(id=id, result_id=data.id, time_creation=now))
+    db.commit()
+
+    return db_data
+
+
+def create_model(db: Session, task_id: str, status: str) -> Model:
+    db_model = Model(task_id=task_id, status=status)
     db.add(db_model)
     db.commit()
     db.refresh(db_model)
+    return db_model
+
+
+def update_model(db: Session, task_id: str, path: str=None, use_percentage: float=None, status: str=None) -> Model:
+    db_model = db.query(Model).filter(Model.task_id == task_id).first()
+    if path is not None:
+        db_model.path = path
+    if use_percentage is not None:
+        db_model.use_percentage = use_percentage
+    if status is not None:
+        db_model.status = status
+    db.commit()
+    db.refresh(db_model)
+
     return db_model
 
 

@@ -5,11 +5,13 @@ from database import crud
 
 from worker.celery import worker
 from worker.models import train_model
+from worker.models.train import evaluate
 
 from datetime import datetime
 
 import os
 import logging
+import json
 
 
 class TrainingTask(Task):
@@ -27,16 +29,32 @@ class TrainingTask(Task):
     bind=True,
     base=TrainingTask
 )
-def train(self):
+def training(self):
     try:
+        task_id = str(self.request.id)
         db = SessionLocal()
 
-        X_tr, Y_tr = crud.get_dataset(db)
+        model = crud.get_best_model(db)
+
+        # TODO: load existing model (maybe create an interm,ediate model for code sharing between the two tasks?)
+
+        logging.info('All artifacts loaded')
+
+        data = crud.create_dataset(db)
+
+        # TODO: pass data to pandas (check columns) then split train/test data
 
         path = os.path.join('.', 'models', f'model.{str(datetime.now())}')
 
         metrics_list = ['accuracy', 'precision', 'recall', 'f1', 'auc']
         metrics = train_model(X_tr, Y_tr, path=path, metrics_list=metrics_list)
+
+        # TODO: test with old and new model
+
+        old_model_metrics = evaluate(Y_ts, y_preds_prev, metrics_list)
+        new_model_metrics = evaluate(Y_ts, y_preds_next, metrics_list)
+
+        # TODO: save to disk and in database, update entry in model table
 
         crud.create_model(db, path, metrics)        
 

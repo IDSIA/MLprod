@@ -14,7 +14,7 @@ import logging
 import os
 
 
-class PredictTask(Task):
+class InferenceTask(Task):
     """
     Abstraction of Celery's Task class to support loading ML model.
     """
@@ -73,7 +73,7 @@ class PredictTask(Task):
 @worker.task(
     ignore_result=False,
     bind=True,
-    base=PredictTask,
+    base=InferenceTask,
 )
 def inference(self, user_id: int):
     try:

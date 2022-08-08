@@ -1,5 +1,5 @@
 from .tables import User, Location, Dataset, Inference, Result, Event, Model
-from .crud import count_locations, count_models, create_model
+from .crud import count_locations, count_models, create_model, update_model
 from sqlalchemy.orm import Session
 
 import numpy as np
@@ -16,13 +16,13 @@ def init_content(db: Session):
     
     User.__table__.create(bind=engine, checkfirst=True)
     Location.__table__.create(bind=engine, checkfirst=True)
-    Dataset.__table__.create(bind=engine, checkfirst=True)
 
     Inference.__table__.create(bind=engine, checkfirst=True)
     Result.__table__.create(bind=engine, checkfirst=True)
 
     Event.__table__.create(bind=engine, checkfirst=True)
 
+    Dataset.__table__.create(bind=engine, checkfirst=True)
     Model.__table__.create(bind=engine, checkfirst=True)
 
     n_locations = count_locations(db)
@@ -37,6 +37,7 @@ def init_content(db: Session):
     n_models = count_models(db)
 
     if n_models == 0:
-        create_model(db, '/app/models/original/', {}, 1.0)
+        db_model = create_model(db, 'baseline_model')
+        update_model(db, task_id=db_model.task, path='/app/models/original/', use_percentage=1.0)
         
     db.close()

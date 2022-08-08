@@ -2,10 +2,11 @@ from pydantic import BaseModel
 from datetime import date
 
 
-class InferenceStatus(BaseModel):
+class TaskStatus(BaseModel):
     """Class that defines the output data of an inference."""
     task_id: str
     status : str
+    type: str
 
 
 class UserData(BaseModel):
