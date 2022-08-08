@@ -96,7 +96,7 @@
       },
       "gridPos": {
         "h": 7,
-        "w": 11,
+        "w": 8,
         "x": 0,
         "y": 1
       },
@@ -130,6 +130,126 @@
     },
     {
       "datasource": {
+        "type": "postgres",
+        "uid": "zNqkUPk4k"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "axisSoftMax": 1,
+            "axisSoftMin": 0,
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 1
+      },
+      "id": 20,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "9.0.2",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "zNqkUPk4k"
+          },
+          "format": "time_series",
+          "group": [],
+          "hide": false,
+          "metricColumn": "none",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  floor(extract(epoch from time_event)/60)*60 AS \"time\",\n  avg(CAST(CASE\n    WHEN event = 'good_inference' THEN 1\n    ELSE 0\n  END as float)) as \"accuracy\"\nFROM events\nWHERE\n  $__timeFilter(time_event)\n  and\n  event in ('good_inference', 'bad_inference')\nGROUP BY 1\nORDER BY 1",
+          "refId": "A",
+          "select": [
+            [
+              {
+                "params": [
+                  "event"
+                ],
+                "type": "column"
+              },
+              {
+                "params": [
+                  "event"
+                ],
+                "type": "alias"
+              }
+            ]
+          ],
+          "table": "events",
+          "timeColumn": "time_event",
+          "timeColumnType": "timestamptz",
+          "where": [
+            {
+              "name": "$__timeFilter",
+              "params": [],
+              "type": "macro"
+            }
+          ]
+        }
+      ],
+      "title": "Accuracy",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
         "type": "prometheus"
       },
       "fieldConfig": {
@@ -156,8 +276,8 @@
       },
       "gridPos": {
         "h": 7,
-        "w": 13,
-        "x": 11,
+        "w": 8,
+        "x": 16,
         "y": 1
       },
       "id": 6,
@@ -689,6 +809,8 @@
           "custom": {
             "axisLabel": "",
             "axisPlacement": "auto",
+            "axisSoftMax": 1,
+            "axisSoftMin": 0,
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 0,

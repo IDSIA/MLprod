@@ -77,6 +77,7 @@ class Result(Base):
     location_id = Column(Integer, ForeignKey('locations.id'))
     score = Column(Float, nullable=False)
     label = Column(Integer, default=0)
+    shown = Column(Boolean, default=False)
 
     user = relationship('User')
     location = relationship('Location')
@@ -94,7 +95,6 @@ class Event(Base):
 
 
 # ---- Retraining tables ----
-
 
 class Dataset(Base):
     __tablename__ = 'datasets'

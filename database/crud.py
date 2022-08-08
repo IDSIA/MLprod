@@ -148,6 +148,18 @@ def get_results_locations(db: Session, task_id: str, limit: int=10) -> list[dict
     return results
 
 
+def mark_locations_as_shown(db: Session, task_id: str, locations: list[dict]) -> list[Result]:
+    loc_ids = [l['location_id'] for l in locations]
+
+    db_locations = db.query(Result).filter(Result.task_id == task_id).filter(Result.location_id in loc_ids).all()
+
+    for db_loc in db_locations:
+        db_loc.shown = True
+        db.commit()
+        db.refresh(db_loc)
+
+    return db_locations
+
 def get_results(db: Session, task_id: int) -> list[Result]:
     return db.query(Result).filter(Result.task_id == task_id).all()
 

@@ -102,7 +102,11 @@ async def get_inference_results(task_id: str, limit: int=10, db: Session = Depen
     """
     crud.create_event(db, 'results')
 
-    return crud.get_results_locations(db, task_id, limit)
+    locations = crud.get_results_locations(db, task_id, limit)
+
+    crud.mark_locations_as_shown(db, task_id, locations)
+
+    return locations
 
 
 @api.put('/inference/select/')
@@ -111,12 +115,18 @@ async def get_click(label: requests.LabelData, db: Session = Depends(get_db)):
     A click will be registered as a label on the data"""
     crud.create_event(db, 'selection')
 
-    db_result = crud.update_result_label(db, label.task_id, label.location_id)
+    if label.location_id == -1:
+        crud.create_event(db, 'bad_inference')
+        return
 
-    if db_result is None:
-        return HTTPException(404, f"Result not found: invalid task_id or location_id")
+    else:
+        crud.create_event(db, 'good_inference')
+        db_result = crud.update_result_label(db, label.task_id, label.location_id)
 
-    return db_result
+        if db_result is None:
+            return HTTPException(404, f"Result not found: invalid task_id or location_id")
+
+        return db_result
 
 
 @api.get('/content/info')
