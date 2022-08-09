@@ -250,7 +250,8 @@
     },
     {
       "datasource": {
-        "type": "prometheus"
+        "type": "prometheus",
+        "uid": "4eegUEzVz"
       },
       "fieldConfig": {
         "defaults": {
@@ -303,7 +304,7 @@
           },
           "editorMode": "builder",
           "expr": "rate(api_processing_time_count[$__rate_interval])",
-          "legendFormat": "{{method}} {{path}}",
+          "legendFormat": "{{path}} {{status_code}}",
           "range": true,
           "refId": "A"
         }
@@ -417,7 +418,7 @@
           "hide": false,
           "metricColumn": "none",
           "rawQuery": false,
-          "rawSql": "SELECT\n  $__timeGroupAlias(creation_time,1m),\n  avg(people_num) AS \"people_num\",\n  avg(children) AS \"children\"\nFROM users\nWHERE\n  $__timeFilter(creation_time)\nGROUP BY 1\nORDER BY 1",
+          "rawSql": "SELECT\n  $__timeGroupAlias(creation_time,1m),\n  avg(people_num) AS \"people_num\",\n  avg(children_num) AS \"children\"\nFROM users\nWHERE\n  $__timeFilter(creation_time)\nGROUP BY 1\nORDER BY 1",
           "refId": "A",
           "select": [
             [
@@ -443,7 +444,7 @@
             [
               {
                 "params": [
-                  "children"
+                  "children_num"
                 ],
                 "type": "column"
               },

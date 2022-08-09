@@ -115,8 +115,8 @@ def get_results_locations(db: Session, task_id: str, limit: int=10) -> list[dict
     """Get all the scored results based on the """
     db_results = (
         db.query(Result)
-        .join(Location, Result.location_id == Location.id)
         .filter(Result.task_id == task_id)
+        .join(Location, Result.location_id == Location.location_id)
         .order_by(Result.score.desc())
         .limit(limit)
         .all()
@@ -126,18 +126,18 @@ def get_results_locations(db: Session, task_id: str, limit: int=10) -> list[dict
     for db_result in db_results:
         results.append({
             'score': db_result.score,
-            'location_id': db_result.location.id,
+            'location_id': db_result.location.location_id,
             'children': db_result.location.children,
             'breakfast': db_result.location.breakfast,
             'lunch': db_result.location.lunch,
             'dinner': db_result.location.dinner,
             'price': db_result.location.price,
-            'pool': db_result.location.pool,
-            'spa': db_result.location.spa,
+            'has_pool': db_result.location.has_pool,
+            'has_spa': db_result.location.has_spa,
             'animals': db_result.location.animals,
-            'lake': db_result.location.lake,
-            'mountain': db_result.location.mountain,
-            'sport': db_result.location.sport,
+            'near_lake': db_result.location.near_lake,
+            'near_mountains': db_result.location.near_mountains,
+            'has_sport': db_result.location.has_sport,
             'family_rating': db_result.location.family_rating,
             'outdoor_rating': db_result.location.outdoor_rating,
             'food_rating': db_result.location.food_rating,
@@ -149,17 +149,20 @@ def get_results_locations(db: Session, task_id: str, limit: int=10) -> list[dict
     return results
 
 
-def mark_locations_as_shown(db: Session, task_id: str, locations: list[dict]) -> list[Result]:
+def mark_locations_as_shown(db: Session, task_id: str, locations: list[dict]) -> None:
     loc_ids = [l['location_id'] for l in locations]
 
-    db_locations = db.query(Result).filter(Result.task_id == task_id).filter(Result.location_id in loc_ids).all()
+    print(loc_ids)
+    print(task_id)
 
-    for db_loc in db_locations:
-        db_loc.shown = True
-        db.commit()
-        db.refresh(db_loc)
+    db.query(Result)\
+            .filter(Result.task_id == task_id)\
+            .filter(Result.location_id.in_(loc_ids))\
+            .update({Result.shown: True})
 
-    return db_locations
+    db.commit()
+
+    return None
 
 
 def get_results(db: Session, task_id: int) -> list[Result]:
@@ -167,7 +170,7 @@ def get_results(db: Session, task_id: int) -> list[Result]:
 
 
 def get_result(db: Session, result_id: int) -> Result:
-    return db.query(Result).filter(Result.id == result_id).first()
+    return db.query(Result).filter(Result.result_id == result_id).first()
 
 
 def update_result_label(db: Session, task_id: str, location_id: int) -> Result:
@@ -193,37 +196,48 @@ def update_result_label(db: Session, task_id: str, location_id: int) -> Result:
     return db_result
 
 
-def create_dataset(db: Session, size: int) -> list:
-    
-    db_data = (
-        db.query(Result)
+def create_dataset(db: Session, task_id: str, size: int) -> pd.DataFrame:
+    query = (
+        db.query(Result, Location, User)
         .filter(Result.shown)
-        .order_by(Result.id.desc())
+        .order_by(Result.result_id.desc())
+        .join(Location, Result.location_id == Location.location_id)
+        .join(User, Result.user_id == User.user_id)
         .limit(size)
-        .join(Location, Result.location_id == Location.id)
-        .join(User, Result.user_id == User.id)
-        .all()
     )
 
-    id = str(uuid.uuid4())
+    print(query.statement)
+
+    df = pd.read_sql(query.statement, db.bind)
+
     now = datetime.now()
 
-    for data in db_data:
-        db.add(Dataset(id=id, result_id=data.id, time_creation=now))
+    for _, row in df[['result_id']].iterrows():
+        db.add(Dataset(task_id=task_id, result_id=int(row['result_id']), time_creation=now))
     db.commit()
 
-    return db_data
+    return df
 
 
-def create_model(db: Session, task_id: str, status: str) -> Model:
-    db_model = Model(task_id=task_id, status=status)
+def create_model(db: Session, task_id: str, status: str|None=None, path: str|None=None, use_percentage: float=0.0) -> Model:
+
+    args = {
+        'task_id': task_id,
+        'use_percentage': use_percentage,
+        'path': path,
+        'status': status,
+    }
+
+    db_model = Model(**args)
+
     db.add(db_model)
     db.commit()
     db.refresh(db_model)
+
     return db_model
 
 
-def update_model(db: Session, task_id: str, path: str=None, use_percentage: float=None, status: str=None) -> Model:
+def update_model(db: Session, task_id: str, status: str=None, path: str=None, metrics: dict|None=None, use_percentage: float=None) -> Model:
     db_model = db.query(Model).filter(Model.task_id == task_id).first()
     if path is not None:
         db_model.path = path
@@ -231,6 +245,10 @@ def update_model(db: Session, task_id: str, path: str=None, use_percentage: floa
         db_model.use_percentage = use_percentage
     if status is not None:
         db_model.status = status
+    if metrics is not None:
+        for t in ['train', 'test']:
+            for k,v in metrics[t]:
+                db_model[f'{t}_{k}'] = float(v)
     db.commit()
     db.refresh(db_model)
 
@@ -265,7 +283,7 @@ def create_event(db: Session, event: str) -> Event:
 
 
 def get_location(db: Session, id: int) -> Location:
-    return db.query(Location).filter(Location.id == id).first()
+    return db.query(Location).filter(Location.location_id == id).first()
 
 
 def get_locations(db: Session, limit: int=0) -> list[Location]:
@@ -280,7 +298,7 @@ def count_locations(db: Session) -> int:
 
 
 def get_user(db: Session, id: int) -> User:
-    return db.query(User).filter(User.id == id).first()
+    return db.query(User).filter(User.user_id == id).first()
 
 
 def get_users(db: Session) -> User:

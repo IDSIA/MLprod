@@ -1,6 +1,3 @@
-import joblib
-import numpy as np
-
 from sklearn.feature_selection import SelectKBest, chi2
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, roc_auc_score
 from sklearn.preprocessing import MinMaxScaler
@@ -10,14 +7,15 @@ import torch.nn as nn
 
 from worker.models.model import Model
 
+import pandas as pd
+import joblib
+import json
+import numpy as np
 import os
 
 
 def train_model(
-        X_tr, 
-        Y_tr, 
-        X_ts=None,
-        Y_ts=None, 
+        dataset: pd.DataFrame,
         path: str='./models',
         k_best: int=20,
         epochs: int=100,
@@ -28,14 +26,8 @@ def train_model(
     ) -> dict[str, dict[str, list[float]]]:
     """Train the model. If required it can also evaluate the model against a test set.
 
-    :param X_tr:
-        Train data.
-    :param Y_tr:
-        Label for train data.
-    :param X_ts:
-        Test data (Optional, if missing no evaluation will be done).
-    :param Y_ts:
-        Label for the test data (Optional, if missing no evaluation will be done).
+    :param df_tr:
+        Pandas' DataFrame for training.
     :param mms_path:
         Path to store the MinMaxScaler model (default: ./models/mms.model). 
     :param skb_path:
@@ -62,29 +54,33 @@ def train_model(
     :return:
         A dictionary with a list of results for each tracked metric.
     """
-    mms_path: str = str(os.path.join(path, 'mms.model'))
-    skb_path: str = str(os.path.join(path, 'skb.model'))
-    model_path: str = str(os.path.join(path, 'neuralnet.model'))
+    path_mms: str = str(os.path.join(path, 'mms.model'))
+    path_skb: str = str(os.path.join(path, 'skb.model'))
+    path_model: str = str(os.path.join(path, 'neuralnet.model'))
+    path_metadata: str = str(os.path.join(path, 'metadata.json'))
+
+    X = dataset.drop('label', axis=1).values
+    Y = dataset['label'].values
+
+    n_records, x_input = X.shape
 
     # Preprocessing: MinMaxScaler ---------------------------------------------
     mms = MinMaxScaler()
-    X_tr = mms.fit_transform(X_tr)
-    if X_ts is not None:
-        X_ts = mms.transform(X_ts)
+    X = mms.fit_transform(X)
 
-    joblib.dump(mms, mms_path)
+    joblib.dump(mms, path_mms)
 
     # Preprocessing: FeatureSelection -----------------------------------------
     skb = SelectKBest(chi2, k=k_best)
-    skb.fit(X_tr, Y_tr)
-    X_tr = skb.transform(X_tr)
-    if X_ts is not None:
-        X_ts = skb.transform(X_ts)
+    skb.fit(X, Y)
+    X = skb.transform(X)
 
-    joblib.dump(skb, skb_path)
+    joblib.dump(skb, path_skb)
+
+    x_output = X.shape[1]
 
     # Training: setup ---------------------------------------------------------
-    n, features = X_tr.shape
+    n, features = X.shape
     batch_count = int(n / batch_size)
     r = np.random.default_rng(random_state)
 
@@ -92,10 +88,6 @@ def train_model(
 
     optimizer = torch.optim.Adam(model.parameters())
     criterion = nn.BCELoss()
-
-    if X_ts is not None and Y_ts is not None:
-        x_ts = torch.FloatTensor(X_ts).to('cpu')
-        y_ts = torch.FloatTensor(Y_ts).to('cpu')
 
     metrics = {
         'train': {
@@ -131,13 +123,13 @@ def train_model(
 
         loss_btc, y_preds, y_trues = [], [], []
         for _ in range(batch_count):
-            mask = (Y_tr == 0).reshape(-1)
+            mask = (Y == 0).reshape(-1)
 
-            X_tr_0 = X_tr[mask]
-            X_tr_1 = X_tr[~mask]
+            X_tr_0 = X[mask]
+            X_tr_1 = X[~mask]
 
-            Y_tr_0 = Y_tr[mask]
-            Y_tr_1 = Y_tr[~mask]
+            Y_tr_0 = Y[mask]
+            Y_tr_1 = Y[~mask]
 
             n0, _ = X_tr_0.shape
             n1, _ = X_tr_1.shape
@@ -171,24 +163,18 @@ def train_model(
     loss_btc_mean = np.array(loss_btc).mean()
     metrics['train']['loss'].append(loss_btc_mean)
         
-    evaluate(y_trues, y_preds, metrics['test'])
+    evaluate(y_trues, y_preds, metrics['train'])
 
-    if X_ts is None and Y_ts is None:
-        model.eval()
+    torch.save(model.state_dict(), path_model)
 
-        # Training: evaluation ------------------------------------------------
-        out = model(x_ts)
-
-        loss = criterion(out, y_ts)
-        l_val = loss.item()
-
-        metrics['test']['loss'].append(l_val)
-
-        pred_ts = out.detach().numpy()
-
-        evaluate(Y_ts, pred_ts, metrics['test'])
-
-    torch.save(model.state_dict(), model_path)
+    with open(path_metadata, 'w+') as f:
+        json.dump({
+            'features': dataset.drop('label', axis=1).columns.to_list(),
+            'x_input':  x_input,
+            'x_output': x_output,
+            'n_records': n_records,
+            'seed': random_state,
+        }, f, indent=4)
 
     return metrics
 

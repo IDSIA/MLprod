@@ -54,7 +54,7 @@ async def schedule_inference(user_data: requests.UserData, db: Session = Depends
     """This is the endpoint used for schedule an inference."""
     crud.create_event(db, 'inference_start')
     ud = crud.create_user_data(db, user_data.dict())
-    task: AsyncResult = inference.delay(ud.id)
+    task: AsyncResult = inference.delay(ud.user_id)
 
     db_inf = crud.create_inference(db, task.task_id, task.status)
     return requests.TaskStatus(
@@ -87,11 +87,13 @@ async def get_inference_status(task_id: str, db: Session = Depends(get_db)):
         return requests.TaskStatus(
             task_id=db_inf.task_id,
             status=db_inf.status,
+            type='inference',
         )
 
     return requests.TaskStatus(
         task_id=db_inf.task_id,
         status=db_inf.status,
+        type='inference',
     )
 
 

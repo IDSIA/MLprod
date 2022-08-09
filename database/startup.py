@@ -37,7 +37,6 @@ def init_content(db: Session):
     n_models = count_models(db)
 
     if n_models == 0:
-        db_model = create_model(db, 'baseline_model')
-        update_model(db, task_id=db_model.task, path='/app/models/original/', use_percentage=1.0)
+        db_model = create_model(db, 'baseline_model', 'SUCCESS', path='/app/models/original/', use_percentage=1.0)
         
     db.close()
