@@ -96,24 +96,24 @@ class UserLabeller:
 
         if user.spa:
             facilities_score_desired += self.weight_spa
-            facilities_score_achieved += user.spa == location.spa
+            facilities_score_achieved += user.spa == location.has_spa
         if user.pool:
             facilities_score_desired += self.weight_pool
-            facilities_score_achieved += user.pool == location.pool
+            facilities_score_achieved += user.pool == location.has_pool
         if user.pet_friendly:
             facilities_score_desired += self.weight_pet
             facilities_score_achieved += user.pet_friendly == location.animals
         if user.lake:
             environment_score_desired += self.weight_lake
-            environment_score_achieved += user.lake == location.lake
+            environment_score_achieved += user.lake == location.near_lake
         if user.mountain:
             environment_score_desired += self.weight_mouintains
-            environment_score_achieved += user.mountain == location.mountain
+            environment_score_achieved += user.mountain == location.near_mountains
         if user.sport:
             facilities_score_desired += self.weight_sport
-            facilities_score_achieved += user.sport == location.sport
+            facilities_score_achieved += user.sport == location.has_sport
             environment_score_desired += self.weight_sport
-            environment_score_achieved += user.sport == location.sport
+            environment_score_achieved += user.sport == location.has_sport
 
         if facilities_score_desired > 0 and \
             facilities_score_achieved / facilities_score_desired < self.facilities_tolerance:
@@ -125,7 +125,7 @@ class UserLabeller:
             # not enough facilities
             return 0
 
-        if user.children and location.family_rating < self.family_tolerance:
+        if user.children_num and location.family_rating < self.family_tolerance:
             # location not right for families
             return 0
 

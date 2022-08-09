@@ -65,16 +65,16 @@ def generate_user_data(
     """
 
     if people_min < people_max:
-        people = sample_int(r, people_min, people_max)[0]
+        people_num = sample_int(r, people_min, people_max)[0]
     else:
-        people = people_min
+        people_num = people_min
     
-    ages = sample_int(r, age_min, age_max, people)
+    ages = sample_int(r, age_min, age_max, people_num)
     
     if minor_age > 0:
-        children = any(ages < minor_age)
+        children_num = any(ages < minor_age)
     else:
-        children = 0
+        children_num = 0
 
     budget = sample_float(r, budget_min, budget_max)[0]
 
@@ -92,9 +92,9 @@ def generate_user_data(
     sport = sample_bool(r, sport_thr)
 
     return UserData(
-        people_num=people,
+        people_num=people_num,
         people_age=ages.tolist(),
-        children=children,
+        children_num=children_num,
         budget=budget,
         time_arrival=time_arr,
         nights=nights,
