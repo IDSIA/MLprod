@@ -1,3 +1,4 @@
+"""Celery configuration script from environment variables and config file."""
 from celery import Celery
 
 import os

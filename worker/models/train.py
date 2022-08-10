@@ -27,16 +27,8 @@ def train_model(
     ) -> dict[str, dict[str, list[float]]]:
     """Train the model. If required it can also evaluate the model against a test set.
 
-    :param df_tr:
+    :param dataset:
         Pandas' DataFrame for training.
-    :param mms_path:
-        Path to store the MinMaxScaler model (default: ./models/mms.model). 
-    :param skb_path:
-        Path to store the SelectKBest model (default ./models/skb.model).
-    :param model_path:
-        Path to store the trained model (default: ./models/neuralnet.model).
-    :param best_model_path:
-        Path to store the model with the best loss (default: ./models/best_nn.torch.model).
     :param k_best:
         Number of features to extract with SelectKBest algorithm (default: 20).
     :param epochs:
@@ -47,10 +39,9 @@ def train_model(
         Proportion of the labels equal to 1 (default: 0.5 which mean same quantity as 0).
     :param random_state:
         Seed for random generation (default: 42).
-    :param save_best:
-        If this flag is true, the best model will be saved to the best_model_path location (default: False).
     :param metrics_list: 
         List of metrics to check for evaluation, also with the test set if availble. (Default: None, which means no metrics except Loss will be tracked).
+        Possible values are `auc` (ROC AUC curve), `acc` (accuracy), `pre` (Precision), `rec` (Recall), `f1` (f1 score).
     
     :return:
         A dictionary with a list of results for each tracked metric.
@@ -179,12 +170,28 @@ def train_model(
     return metrics
 
 
-def evaluate(y_trues, y_preds, metrics_list: list[str], pred_threshold: float=0.5) -> dict[str, list[float]]:
+def evaluate(y_trues, y_preds, metrics_list: list[str], pred_threshold: float=0.5) -> dict[str, float]:
+    """Evaluate the performance over a list of given metrics.
+
+    :param y_trues:
+        True values to test against.
+    :param y_preds:
+        Direct output values of the model (discretization is done internally).
+    :param metrics_list:
+        List of metrics to track. Possible values are `auc` (ROC AUC curve), `acc` (accuracy), 
+        `pre` (Precision), `rec` (Recall), `f1` (f1 score).
+    :param pred_threshold:
+        Threshold for class definition: 1 above this threshold, otherwise class 0.
+    
+    :return:
+        A dictionary with the metric value for each metric entry in the `metrics_list` argument.
+    """
     metrics = dict()
 
     if 'auc' in metrics_list:
         metrics['auc'] = roc_auc_score(y_trues, y_preds)
 
+    # discretize
     y_preds = (y_preds > pred_threshold).astype('int')
 
     if 'acc' in metrics_list:
