@@ -29,10 +29,12 @@ def read_user_config(config: str) -> list[dict]:
 
 
 def generate_user_labeller_from_config(conf: dict) -> UserLabeller:
+    """Utility wrapper for `UserLabeller()` constructor method."""
     return UserLabeller(**conf['labels'])
 
 
 def generate_user_data_from_config(r: np.random.Generator, conf: dict) -> UserData:
+    """Utility wrapper for `generate_user_data()` function."""
     return generate_user_data(r=r, **conf['settings'])
 
 
