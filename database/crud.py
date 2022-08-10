@@ -152,17 +152,12 @@ def get_results_locations(db: Session, task_id: str, limit: int=10) -> list[dict
 def mark_locations_as_shown(db: Session, task_id: str, locations: list[dict]) -> None:
     loc_ids = [l['location_id'] for l in locations]
 
-    print(loc_ids)
-    print(task_id)
-
     db.query(Result)\
             .filter(Result.task_id == task_id)\
             .filter(Result.location_id.in_(loc_ids))\
             .update({Result.shown: True})
 
     db.commit()
-
-    return None
 
 
 def get_results(db: Session, task_id: int) -> list[Result]:
@@ -206,8 +201,6 @@ def create_dataset(db: Session, task_id: str, size: int) -> pd.DataFrame:
         .limit(size)
     )
 
-    print(query.statement)
-
     df = pd.read_sql(query.statement, db.bind)
 
     now = datetime.now()
@@ -237,22 +230,27 @@ def create_model(db: Session, task_id: str, status: str|None=None, path: str|Non
     return db_model
 
 
-def update_model(db: Session, task_id: str, status: str=None, path: str=None, metrics: dict|None=None, use_percentage: float=None) -> Model:
-    db_model = db.query(Model).filter(Model.task_id == task_id).first()
+def update_model(db: Session, task_id: str, status: str|None=None, path: str|None=None, metrics: dict|None=None, use_percentage: float|None=None) -> None:    
+    upd_data = dict()
+
     if path is not None:
-        db_model.path = path
+        upd_data['path'] = path
+    
     if use_percentage is not None:
-        db_model.use_percentage = use_percentage
+        upd_data['use_percentage'] = use_percentage
+    
     if status is not None:
-        db_model.status = status
+        upd_data['status'] = status
+    
     if metrics is not None:
         for t in ['train', 'test']:
-            for k,v in metrics[t]:
-                db_model[f'{t}_{k}'] = float(v)
+            for k, v in metrics[t].items():
+                if k == 'loss':
+                    continue
+                upd_data[f'{t}_{k}'] = float(v)
+    
+    db.query(Model).filter(Model.task_id == task_id).update(upd_data)
     db.commit()
-    db.refresh(db_model)
-
-    return db_model
 
 
 def get_best_model(db: Session) -> Model:

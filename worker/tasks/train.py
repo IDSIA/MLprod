@@ -56,7 +56,7 @@ def training(self):
         df_train = df[:tr_size]
         df_test = df[tr_size:]
 
-        metrics_list = ['accuracy', 'precision', 'recall', 'f1', 'auc']
+        metrics_list = ['acc', 'pre', 'rec', 'f1', 'auc']
         metrics_tr = train_model(df_train, path=path, metrics_list=metrics_list)
 
         # reload trained model
@@ -64,29 +64,33 @@ def training(self):
 
         # test with old and new model
         X = df_test.drop('label', axis=1).values
-        Y = df_test['label'].values
+        Y = df_test['label'].values.reshape(-1, 1)
 
         y_preds_old = model_old(X)
         y_preds_new = model_new(X)
 
-        model_old_metrics = evaluate(Y, y_preds_old, metrics_list)
-        model_new_metrics = evaluate(Y, y_preds_new, metrics_list)
+        model_old_metrics_ts = evaluate(Y, y_preds_old, metrics_list)
+        model_new_metrics_ts = evaluate(Y, y_preds_new, metrics_list)
 
-        acc_new = model_new_metrics['test']['acc']
-        acc_old = model_old_metrics['test']['acc']
-
-        model_new_metrics = model_new_metrics | metrics_tr
+        acc_new = model_old_metrics_ts['acc']
+        acc_old = model_new_metrics_ts['acc']
 
         if acc_new > acc_old:
-            logging(f'Training {task_id} has better accuracy ({acc_new:.2}) than old model ({acc_old:.2})')
+            logging.info(f'Training {task_id} has better accuracy ({acc_new:.2}) than old model ({acc_old:.2})')
             use_percentage = 1.0
         else:
-            logging(f'Training {task_id} has worst accuracy ({acc_new:.2}) than old model ({acc_old:.2})')
+            logging.info(f'Training {task_id} has worst accuracy ({acc_new:.2}) than old model ({acc_old:.2})')
             use_percentage = 0.0
 
-        # save to disk and in database, update entry in model table
+        # update entry in model table
+        model_new_metrics = {
+            'train': metrics_tr,
+            'test': model_new_metrics_ts,
+        }
 
-        crud.update_model(db, task_id, 'DONE', model_new_metrics, use_percentage)
+        print(model_new_metrics)
+
+        crud.update_model(db, task_id, 'SUCCESS', metrics=model_new_metrics, use_percentage=use_percentage)
 
         logging.info(f'Training model {task_id} completed')
 

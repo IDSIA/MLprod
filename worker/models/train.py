@@ -10,6 +10,7 @@ from worker.models.model import Model
 import pandas as pd
 import joblib
 import json
+import logging
 import numpy as np
 import os
 
@@ -60,7 +61,7 @@ def train_model(
     path_metadata: str = str(os.path.join(path, 'metadata.json'))
 
     X = dataset.drop('label', axis=1).values
-    Y = dataset['label'].values
+    Y = dataset['label'].values.reshape(-1, 1)
 
     n_records, x_input = X.shape
 
@@ -70,6 +71,8 @@ def train_model(
 
     joblib.dump(mms, path_mms)
 
+    logging.info(f'training: MinMaxScaler saved to {path_mms}')
+
     # Preprocessing: FeatureSelection -----------------------------------------
     skb = SelectKBest(chi2, k=k_best)
     skb.fit(X, Y)
@@ -77,65 +80,50 @@ def train_model(
 
     joblib.dump(skb, path_skb)
 
-    x_output = X.shape[1]
+    logging.info(f'training: SelectKBest saved to {path_skb}')
 
     # Training: setup ---------------------------------------------------------
-    n, features = X.shape
+    n, x_output = X.shape
+
     batch_count = int(n / batch_size)
     r = np.random.default_rng(random_state)
 
-    model = Model(features).to('cpu')
+    logging.info(f'training: creating model with input {x_output}')
+
+    model = Model(x_output).to('cpu')
 
     optimizer = torch.optim.Adam(model.parameters())
     criterion = nn.BCELoss()
 
     metrics = {
-        'train': {
-            'loss': []
-        },
-        'test': {
-            'loss': []
-        }
+        'loss': []
     }
 
-    if metrics_list is not None:
-        for metric in metrics_list:
-            if metric == 'accuracy':
-                metrics['train']['acc'] = []
-                metrics['test']['acc'] = []
-            if metric == 'precision':
-                metrics['train']['pre'] = []
-                metrics['test']['pre'] = []
-            if metric == 'recall':
-                metrics['train']['rec'] = []
-                metrics['test']['rec'] = []
-            if metric == 'f1':
-                metrics['train']['f1'] = []
-                metrics['test']['f1'] = []
-            if metric == 'auc':
-                metrics['train']['auc'] = []
-                metrics['test']['auc'] = []
-
     # Training: run -----------------------------------------------------------
-    for _ in range(epochs):
+    mask = (Y == 0).reshape(-1)
+
+    X_tr_0 = X[mask]
+    X_tr_1 = X[~mask]
+
+    Y_tr_0 = Y[mask]
+    Y_tr_1 = Y[~mask]
+
+    n0, _ = X_tr_0.shape
+    n1, _ = X_tr_1.shape
+
+    batch0_size = min(n, int(batch_size * (1 - frac1)))
+    batch1_size = min(n, int(batch_size * frac1))
+
+    for epoch in range(epochs):
+        logging.info(f'training: epoch {epoch}/{epochs}')
+
         # train
         model.train()
 
         loss_btc, y_preds, y_trues = [], [], []
         for _ in range(batch_count):
-            mask = (Y == 0).reshape(-1)
-
-            X_tr_0 = X[mask]
-            X_tr_1 = X[~mask]
-
-            Y_tr_0 = Y[mask]
-            Y_tr_1 = Y[~mask]
-
-            n0, _ = X_tr_0.shape
-            n1, _ = X_tr_1.shape
-
-            sample_ids_0 = r.choice(n0, size=min(n, int(batch_size * (1 - frac1))))
-            sample_ids_1 = r.choice(n1, size=min(n, int(batch_size * frac1)))
+            sample_ids_0 = r.choice(n0, size=batch0_size)
+            sample_ids_1 = r.choice(n1, size=batch1_size)
 
             x_tr = np.vstack((X_tr_0[sample_ids_0], X_tr_1[sample_ids_1]))
             y_tr = np.vstack((Y_tr_0[sample_ids_0], Y_tr_1[sample_ids_1]))
@@ -144,6 +132,7 @@ def train_model(
             y = torch.FloatTensor(y_tr).to('cpu')
 
             out = model(x)
+
             loss = criterion(out, y)
             l_val = loss.item()
             
@@ -156,16 +145,25 @@ def train_model(
             y_preds.append(out.detach().numpy())
             y_trues.append(y_tr)
 
+    logging.info(f'training: completed')
+
     y_preds = np.array(y_preds).reshape(-1)
     y_trues = np.array(y_trues).reshape(-1)
 
     # Training: record metrics --------------------------------------------
+    metrics = {}
+
     loss_btc_mean = np.array(loss_btc).mean()
-    metrics['train']['loss'].append(loss_btc_mean)
+    metrics['loss'] = loss_btc_mean
         
-    evaluate(y_trues, y_preds, metrics['train'])
+    metrics = metrics | evaluate(y_trues, y_preds, metrics_list)
+
+    for k,v in metrics.items():
+        logging.info(f'train metric {k}: {v:.4}')
 
     torch.save(model.state_dict(), path_model)
+
+    logging.info(f'training: model saved to {path_model}')
 
     with open(path_metadata, 'w+') as f:
         json.dump({
@@ -176,20 +174,26 @@ def train_model(
             'seed': random_state,
         }, f, indent=4)
 
+    logging.info(f'training: metadata saved to {path_metadata}')
+
     return metrics
 
 
-def evaluate(y_trues, y_preds, metrics: dict[str, list[float]], pred_threshold: float=0.5):
-    if 'auc' in metrics:
-        metrics['auc'].append(roc_auc_score(y_trues, y_preds))
+def evaluate(y_trues, y_preds, metrics_list: list[str], pred_threshold: float=0.5) -> dict[str, list[float]]:
+    metrics = dict()
+
+    if 'auc' in metrics_list:
+        metrics['auc'] = roc_auc_score(y_trues, y_preds)
 
     y_preds = (y_preds > pred_threshold).astype('int')
 
-    if 'acc' in metrics:
-        metrics['acc'].append(accuracy_score(y_trues, y_preds))
-    if 'pre' in metrics:
-        metrics['pre'].append(recall_score(y_trues, y_preds, zero_division=0))
-    if 'rec' in metrics:
-        metrics['rec'].append(precision_score(y_trues, y_preds, zero_division=0))
-    if 'f1' in metrics:
-        metrics['f1'].append(f1_score(y_trues, y_preds, zero_division=0))
+    if 'acc' in metrics_list:
+        metrics['acc'] = accuracy_score(y_trues, y_preds)
+    if 'pre' in metrics_list:
+        metrics['pre'] = recall_score(y_trues, y_preds, zero_division=0)
+    if 'rec' in metrics_list:
+        metrics['rec'] = precision_score(y_trues, y_preds, zero_division=0)
+    if 'f1' in metrics_list:
+        metrics['f1'] = f1_score(y_trues, y_preds, zero_division=0)
+    
+    return metrics
