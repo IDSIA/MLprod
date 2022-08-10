@@ -34,7 +34,7 @@ def inference(self, user_id: int):
         db = SessionLocal()
 
         # check if there is a new model to use
-        db_model = crud.get_best_model(db)
+        db_model = crud.get_active_model(db)
 
         if self.model is None or self.path != db_model.path:
             logging.info(f'Reloading model from path {db_model.path}')

@@ -66,7 +66,7 @@ def update_inference(db: Session, task_id: str, status: str) -> Inference:
 
     :param db:
         Session with the connection to the database.
-    :param pred:
+    :param task_id:
         Task id to update.
     :param status:
         New status to assign to the given task id.
@@ -112,7 +112,16 @@ def create_results(db: Session, df: pd.DataFrame) -> list[Result]:
 
 
 def get_results_locations(db: Session, task_id: str, limit: int=10) -> list[dict]:
-    """Get all the scored results based on the """
+    """Get all the scored results based on the given task_id. Results are ordered by 
+    score and can be limited by ghe limit arguments.
+    
+    :param db:
+        Session with the connection to the database.
+    :param task_id:
+        Id of the task where the score was calculated.
+    :param limit:
+        Limit the results with this parameter.
+    """
     db_results = (
         db.query(Result)
         .filter(Result.task_id == task_id)
@@ -150,6 +159,15 @@ def get_results_locations(db: Session, task_id: str, limit: int=10) -> list[dict
 
 
 def mark_locations_as_shown(db: Session, task_id: str, locations: list[dict]) -> None:
+    """Mark the locations that has been shown to the user so they can be used in a dataset.
+
+    :param db:
+        Session with the connection to the database.
+    :param task_id:
+        Id of the task to consider.
+    :param locations:
+        List of the location ids that need to be marked.
+    """
     loc_ids = [l['location_id'] for l in locations]
 
     db.query(Result)\
@@ -192,6 +210,17 @@ def update_result_label(db: Session, task_id: str, location_id: int) -> Result:
 
 
 def create_dataset(db: Session, task_id: str, size: int) -> pd.DataFrame:
+    """Creates a dataset in Pandas' DataFrame forma from the data shown 
+    to the users and stored in the database. Only the newer data will be
+    returned.
+
+    :param db:
+        Session with the connection to the database.
+    :param task_id:
+        Id of the training task to be used as id of the dataset.
+    :param size:
+        Size of the dataset.
+    """
     query = (
         db.query(Result, Location, User)
         .filter(Result.shown)
@@ -213,6 +242,19 @@ def create_dataset(db: Session, task_id: str, size: int) -> pd.DataFrame:
 
 
 def create_model(db: Session, task_id: str, status: str|None=None, path: str|None=None, use_percentage: float=0.0) -> Model:
+    """Creates a new model entry in the database.
+
+    :param db:
+        Session with the connection to the database.
+    :param task_id:
+        Id of the training task to be used as id of the model.
+    :param status:
+        Current status of the training of this model.
+    :param path:
+        Path on disk of the model.
+    :param use_percentage:
+        Percentage of usage for this model.
+    """
 
     args = {
         'task_id': task_id,
@@ -230,7 +272,23 @@ def create_model(db: Session, task_id: str, status: str|None=None, path: str|Non
     return db_model
 
 
-def update_model(db: Session, task_id: str, status: str|None=None, path: str|None=None, metrics: dict|None=None, use_percentage: float|None=None) -> None:    
+def update_model(db: Session, task_id: str, status: str|None=None, path: str|None=None, metrics: dict[str, dict[str, float]]|None=None, use_percentage: float|None=None) -> None:
+    """Update values of a model stored in the database. If values are passed
+    they will be updated. None values will be ignored.
+
+    :param db:
+        Session with the connection to the database.
+    :param task_id:
+        Id of the training task or of the model.
+    :param status:
+        Current status of the training of this model.
+    :param path:
+        Path on disk of the model.
+    :param metrics:
+        Dictionary with values for each metrics to save on database.
+    :param use_percentage:
+        Percentage of usage for this model.
+    """
     upd_data = dict()
 
     if path is not None:
@@ -253,7 +311,13 @@ def update_model(db: Session, task_id: str, status: str|None=None, path: str|Non
     db.commit()
 
 
-def get_best_model(db: Session) -> Model:
+def get_active_model(db: Session) -> Model:
+    """Return the current active model. An active model is a model with a use_percentage
+    greather than zero. If multiple are active, only the first one will be returned.
+    
+    :param db:
+        Session with the connection to the database.
+    """
     # TODO: this should return a list of models, then who call it choose what to load
     return db.query(Model).filter(Model.use_percentage > 0).first()
 

@@ -28,6 +28,7 @@ def init_content(db: Session):
     n_locations = count_locations(db)
 
     if n_locations == 0:
+        # if not populated, add data
         df = pd.read_csv('./dataset/dataset_locations.tsv', sep='\t')
         df['id'] = np.arange(df.shape[0])
 
@@ -37,6 +38,7 @@ def init_content(db: Session):
     n_models = count_models(db)
 
     if n_models == 0:
-        db_model = create_model(db, 'baseline_model', 'SUCCESS', path='/app/models/original/', use_percentage=1.0)
+        # if no models is available, add the baseline model
+        create_model(db, 'baseline_model', 'SUCCESS', path='/app/models/original/', use_percentage=1.0)
         
     db.close()

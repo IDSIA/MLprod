@@ -48,7 +48,7 @@ def training(self):
         crud.update_model(db, task_id, 'TRAINING', path) 
 
         # load existing model for metadata
-        db_model_old = crud.get_best_model(db)
+        db_model_old = crud.get_active_model(db)
         model_old = Model(db_model_old.path)
 
         tr_size, ts_size = model_old.metadata['n_records'], 1000
