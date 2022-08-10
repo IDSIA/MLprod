@@ -72,14 +72,14 @@ def training(self):
         model_old_metrics_ts = evaluate(Y, y_preds_old, metrics_list)
         model_new_metrics_ts = evaluate(Y, y_preds_new, metrics_list)
 
-        acc_new = model_old_metrics_ts['acc']
-        acc_old = model_new_metrics_ts['acc']
+        acc_new = model_old_metrics_ts['auc']
+        acc_old = model_new_metrics_ts['auc']
 
         if acc_new > acc_old:
-            logging.info(f'Training {task_id} has better accuracy ({acc_new:.2}) than old model ({acc_old:.2})')
+            logging.info(f'Training {task_id} has better ROC AUC ({acc_new:.4}) than old model ({acc_old:.4})')
             use_percentage = 1.0
         else:
-            logging.info(f'Training {task_id} has worst accuracy ({acc_new:.2}) than old model ({acc_old:.2})')
+            logging.info(f'Training {task_id} has worst ROC AUC ({acc_new:.4}) than old model ({acc_old:.4})')
             use_percentage = 0.0
 
         # update entry in model table
@@ -87,8 +87,6 @@ def training(self):
             'train': metrics_tr,
             'test': model_new_metrics_ts,
         }
-
-        print(model_new_metrics)
 
         crud.update_model(db, task_id, 'SUCCESS', metrics=model_new_metrics, use_percentage=use_percentage)
 
