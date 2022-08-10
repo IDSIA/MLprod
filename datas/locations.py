@@ -27,6 +27,7 @@ def read_location_config(config: str) -> list[dict]:
 
 
 def generate_location_data_from_config(r: np.random.Generator, conf: dict) -> LocationData:
+    """Utility wrapper for `generate_location_data()` function."""
     return generate_location_data(r=r, **conf['settings'])
 
 
@@ -57,7 +58,6 @@ def generate_location_data(
     score_min: float=0.0,
     score_max: float=1.0,
 ) -> LocationData:
-
     """This function will generate the location in a synthtetic way. The objective is
     create possible numeric descriptors for each location.
 

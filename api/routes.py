@@ -31,8 +31,7 @@ def get_db():
 
 @api.on_event('startup')
 async def populate_database():
-    """
-    All operations marked as ``on_event('startup')`` are executed when the APi are runned.
+    """All operations marked as ``on_event('startup')`` are executed when the APi are runned.
 
     In this case, we initialize the database and populate it with some data.
     """
@@ -135,6 +134,7 @@ async def get_click(label: requests.LabelData, db: Session = Depends(get_db)):
 
 @api.post('/train/start')
 async def schedule_training(db: Session = Depends(get_db)):
+    """This is the endpoint to start the training of a new model."""
     crud.create_event(db, 'training')
 
     task: AsyncResult = training.delay()

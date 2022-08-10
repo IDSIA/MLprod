@@ -17,6 +17,8 @@ import os
 
 
 class PrometheusMiddleware(BaseHTTPMiddleware):
+    """Middleware that track and store the metrics for Prometheus."""
+
     def __init__(self, 
             app: ASGIApp, 
             app_name:str='ASGIApp',
@@ -25,21 +27,25 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         labels = ['method', 'path', 'status_code', 'app_name']
 
+        # counts all requests for api
         self.request_counter = Counter(
             'api_request', 
             'Total HTTP requests',
             labels
         )
+        # counts exceptions for api
         self.request_exception = Counter(
             'api_exception',
             'Total number of exceptions on API requests',
             labels,
         )
+        # track execution time for each request
         self.request_time = Histogram(
             'api_processing_time',
             'HTTP request processing time in seconds', 
             labels
         )
+        # track number of active inferences
         self.active_inferences = Gauge(
             'api_active_inferences',
             'Number of active inferences',
@@ -101,6 +107,8 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
 
 
 def metrics_route(ignored: Request) -> Response:
+    """Generate route for the /metric endpoint."""
+
     registry = REGISTRY
     if 'PROMETHEUS_MULTIPROC_DIR' in os.environ:
         registry = CollectorRegistry()

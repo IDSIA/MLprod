@@ -8,6 +8,7 @@ from .database import Base
 # ---- Dataset tables ----
 
 class User(Base):
+    """Table used to store all the data received with the user's requests."""
     __tablename__ = 'users'
     user_id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     creation_time = Column(DateTime(timezone=True), server_default=now())
@@ -29,6 +30,7 @@ class User(Base):
 
 
 class Location(Base):
+    """Table used to store all the locations."""
     __tablename__ = 'locations'
     location_id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     creation_time = Column(DateTime(timezone=True), server_default=now())
@@ -97,6 +99,9 @@ class Event(Base):
 # ---- Retraining tables ----
 
 class Dataset(Base):
+    """Table used to store information on dataset used during the training of a model.
+    
+    Use the filed `task_id` to find the used model."""
     __tablename__ = 'datasets'
     task_id = Column(String, primary_key=True, index=True)
     result_id = Column(Integer, ForeignKey('results.result_id'), primary_key=True)

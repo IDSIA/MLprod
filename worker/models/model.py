@@ -1,7 +1,9 @@
 import torch.nn as nn
+import torch
 
 
 class Model(nn.Module):
+    """This is the PyTorch definition of our model."""
 
     def __init__(self, input_size=26):
         super(Model, self).__init__()
@@ -18,5 +20,8 @@ class Model(nn.Module):
 
         self.net = nn.Sequential(*self.layers)
 
-    def forward(self, x):
+    def __call__(self, x: torch.Tensor) -> torch.Tensor:
+        return super().__call__(x)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.net(x)

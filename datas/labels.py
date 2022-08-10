@@ -4,6 +4,7 @@ import numpy as np
 from api.requests import LocationData, UserData
 
 class UserLabeller:
+    """This class is used to create a labeller that aims to copy the decisional process of a real user."""
 
     def __init__(
         self, 
@@ -33,7 +34,8 @@ class UserLabeller:
             Percentage of the user requested facilities that are met by the 
             location. User desire can be manipulated using ``weight_*`` parameters
             Example:
-                User wants 4 facilities, location offer 3, this has a 0.75 achieved score. With a threshold of 0.8, the location is rejected.
+                User wants 4 facilities, location offer 3, this has a 0.75 achieved score.
+                With a threshold of 0.8, the location is rejected.
 
         :param weight_*:
             These parameters manage the desired level of each facility of a location. 

@@ -10,6 +10,7 @@ class TaskStatus(BaseModel):
 
 
 class UserData(BaseModel):
+    """Class that defines the user inputs."""
     people_num: int
     people_age: list[int] # for each people
     children_num: int
@@ -25,6 +26,7 @@ class UserData(BaseModel):
 
 
 class LocationData(BaseModel):
+    """Class that defines the location data."""
     location_id: int = 0
     children: bool
     breakfast: bool
@@ -46,9 +48,11 @@ class LocationData(BaseModel):
 
 
 class LabelData(BaseModel):
+    """Class used to label the location of an inference task."""
     task_id: str
     location_id: int
 
 class ContentInfo(BaseModel):
+    """Class for return all users and locations."""
     locations: int
     users: int
