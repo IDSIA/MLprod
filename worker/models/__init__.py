@@ -1,9 +1,8 @@
 __all__ = [
     'Model',
-    'PreProcess',
     'train_model',
+    'evaluate',
 ]
 
-from worker.models.model import Model
-from worker.models.preprocess import PreProcess
-from worker.models.train import train_model
+from worker.models.wrapper import InferenceModel as Model
+from worker.models.train import train_model, evaluate

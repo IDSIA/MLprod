@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 
 from datas import read_user_config, generate_user_data_from_config, read_location_config, generate_location_data_from_config, UserLabeller
+from datas.users import generate_user_labeller_from_config
 
 r = np.random.default_rng(42)
 
@@ -33,11 +34,12 @@ user_data = []
 # generic user
 for user in user_settings:
     for s in range(user['qnt']):
-        user_data.append(
-            generate_user_data_from_config(r, user)
-        )
+        user_data.append((
+            generate_user_data_from_config(r, user),
+            generate_user_labeller_from_config(user),
+        ))
 
-df_user = pd.DataFrame([x.dict() for x in user_data])
+df_user = pd.DataFrame([x.dict() for x, _ in user_data])
 df_user.to_csv(DATASET_USER, index=False, header=True, sep='\t')
 
 print("Done")
@@ -57,6 +59,7 @@ for loc in loc_settings:
 
 # save all objects to a tab-separated value (TSV) file
 df_data = pd.DataFrame([x.dict() for x in location_data])
+df_data.drop('location_id', axis=1, inplace=True)
 df_data.to_csv(DATASET_LOC, index=False, header=True, sep='\t')
 
 print("Done")
@@ -65,12 +68,10 @@ print("Done")
 
 print("Labelling data... ", end="")
 
-ul = UserLabeller()
-
 ml_data = []
 users = r.choice(user_data, 1000).tolist()
 
-for user in users:
+for user, ul in users:
     locs = r.choice(location_data, 10).tolist()
     scores = ul(r, user, locs)
 
@@ -80,6 +81,7 @@ for user in users:
         ml_data.append(d)
 
 df_ml = pd.DataFrame(ml_data)
+df_ml.drop('location_id', axis=1, inplace=True)
 df_ml.to_csv(DATASET_LABEL, index=False, header=True, sep='\t')
 
 print("Done")

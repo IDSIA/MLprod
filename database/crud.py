@@ -1,10 +1,11 @@
 import numpy as np
 import pandas as pd
+import uuid
 
 from sqlalchemy.orm import Session
 
 from datetime import datetime
-from .tables import Location, Inference, Event, Result, User, Model
+from .tables import Dataset, Location, Inference, Event, Result, User, Model
 
 
 def create_user_data(db: Session, user_data: dict) -> User:
@@ -114,8 +115,8 @@ def get_results_locations(db: Session, task_id: str, limit: int=10) -> list[dict
     """Get all the scored results based on the """
     db_results = (
         db.query(Result)
-        .join(Location, Result.location_id == Location.id)
         .filter(Result.task_id == task_id)
+        .join(Location, Result.location_id == Location.location_id)
         .order_by(Result.score.desc())
         .limit(limit)
         .all()
@@ -125,18 +126,18 @@ def get_results_locations(db: Session, task_id: str, limit: int=10) -> list[dict
     for db_result in db_results:
         results.append({
             'score': db_result.score,
-            'location_id': db_result.location.id,
+            'location_id': db_result.location.location_id,
             'children': db_result.location.children,
             'breakfast': db_result.location.breakfast,
             'lunch': db_result.location.lunch,
             'dinner': db_result.location.dinner,
             'price': db_result.location.price,
-            'pool': db_result.location.pool,
-            'spa': db_result.location.spa,
+            'has_pool': db_result.location.has_pool,
+            'has_spa': db_result.location.has_spa,
             'animals': db_result.location.animals,
-            'lake': db_result.location.lake,
-            'mountain': db_result.location.mountain,
-            'sport': db_result.location.sport,
+            'near_lake': db_result.location.near_lake,
+            'near_mountains': db_result.location.near_mountains,
+            'has_sport': db_result.location.has_sport,
             'family_rating': db_result.location.family_rating,
             'outdoor_rating': db_result.location.outdoor_rating,
             'food_rating': db_result.location.food_rating,
@@ -148,12 +149,23 @@ def get_results_locations(db: Session, task_id: str, limit: int=10) -> list[dict
     return results
 
 
+def mark_locations_as_shown(db: Session, task_id: str, locations: list[dict]) -> None:
+    loc_ids = [l['location_id'] for l in locations]
+
+    db.query(Result)\
+            .filter(Result.task_id == task_id)\
+            .filter(Result.location_id.in_(loc_ids))\
+            .update({Result.shown: True})
+
+    db.commit()
+
+
 def get_results(db: Session, task_id: int) -> list[Result]:
     return db.query(Result).filter(Result.task_id == task_id).all()
 
 
 def get_result(db: Session, result_id: int) -> Result:
-    return db.query(Result).filter(Result.id == result_id).first()
+    return db.query(Result).filter(Result.result_id == result_id).first()
 
 
 def update_result_label(db: Session, task_id: str, location_id: int) -> Result:
@@ -179,12 +191,66 @@ def update_result_label(db: Session, task_id: str, location_id: int) -> Result:
     return db_result
 
 
-def create_model(db: Session, path: str, metrics: dict[str, float], use_percentage: float=.0) -> Model:
-    db_model = Model(path=path, use_percentage=use_percentage, **metrics)
+def create_dataset(db: Session, task_id: str, size: int) -> pd.DataFrame:
+    query = (
+        db.query(Result, Location, User)
+        .filter(Result.shown)
+        .order_by(Result.result_id.desc())
+        .join(Location, Result.location_id == Location.location_id)
+        .join(User, Result.user_id == User.user_id)
+        .limit(size)
+    )
+
+    df = pd.read_sql(query.statement, db.bind)
+
+    now = datetime.now()
+
+    for _, row in df[['result_id']].iterrows():
+        db.add(Dataset(task_id=task_id, result_id=int(row['result_id']), time_creation=now))
+    db.commit()
+
+    return df
+
+
+def create_model(db: Session, task_id: str, status: str|None=None, path: str|None=None, use_percentage: float=0.0) -> Model:
+
+    args = {
+        'task_id': task_id,
+        'use_percentage': use_percentage,
+        'path': path,
+        'status': status,
+    }
+
+    db_model = Model(**args)
+
     db.add(db_model)
     db.commit()
     db.refresh(db_model)
+
     return db_model
+
+
+def update_model(db: Session, task_id: str, status: str|None=None, path: str|None=None, metrics: dict|None=None, use_percentage: float|None=None) -> None:    
+    upd_data = dict()
+
+    if path is not None:
+        upd_data['path'] = path
+    
+    if use_percentage is not None:
+        upd_data['use_percentage'] = use_percentage
+    
+    if status is not None:
+        upd_data['status'] = status
+    
+    if metrics is not None:
+        for t in ['train', 'test']:
+            for k, v in metrics[t].items():
+                if k == 'loss':
+                    continue
+                upd_data[f'{t}_{k}'] = float(v)
+    
+    db.query(Model).filter(Model.task_id == task_id).update(upd_data)
+    db.commit()
 
 
 def get_best_model(db: Session) -> Model:
@@ -215,7 +281,7 @@ def create_event(db: Session, event: str) -> Event:
 
 
 def get_location(db: Session, id: int) -> Location:
-    return db.query(Location).filter(Location.id == id).first()
+    return db.query(Location).filter(Location.location_id == id).first()
 
 
 def get_locations(db: Session, limit: int=0) -> list[Location]:
@@ -230,7 +296,7 @@ def count_locations(db: Session) -> int:
 
 
 def get_user(db: Session, id: int) -> User:
-    return db.query(User).filter(User.id == id).first()
+    return db.query(User).filter(User.user_id == id).first()
 
 
 def get_users(db: Session) -> User:

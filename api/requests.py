@@ -2,16 +2,17 @@ from pydantic import BaseModel
 from datetime import date
 
 
-class InferenceStatus(BaseModel):
+class TaskStatus(BaseModel):
     """Class that defines the output data of an inference."""
     task_id: str
     status : str
+    type: str
 
 
 class UserData(BaseModel):
     people_num: int
     people_age: list[int] # for each people
-    children: int
+    children_num: int
     budget: float
     nights: int
     time_arrival: date
@@ -30,12 +31,12 @@ class LocationData(BaseModel):
     lunch: bool
     dinner: bool
     price: float
-    pool: bool = False
-    spa: bool = False
+    has_pool: bool = False
+    has_spa: bool = False
     animals: bool = False
-    lake: bool = False
-    mountain: bool = False
-    sport: bool = False
+    near_lake: bool = False
+    near_mountains: bool = False
+    has_sport: bool = False
     family_rating: float
     outdoor_rating: float
     food_rating: float

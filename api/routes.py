@@ -11,6 +11,7 @@ from database.database import SessionLocal
 from database import crud, startup
 
 from worker.tasks.inference import inference
+from worker.tasks.train import training
 
 
 api = FastAPI()
@@ -53,16 +54,17 @@ async def schedule_inference(user_data: requests.UserData, db: Session = Depends
     """This is the endpoint used for schedule an inference."""
     crud.create_event(db, 'inference_start')
     ud = crud.create_user_data(db, user_data.dict())
-    task: AsyncResult = inference.delay(ud.id)
+    task: AsyncResult = inference.delay(ud.user_id)
 
     db_inf = crud.create_inference(db, task.task_id, task.status)
-    return requests.InferenceStatus(
+    return requests.TaskStatus(
         task_id=db_inf.task_id,
         status=db_inf.status,
+        type='inference'
     )
 
 
-@api.get('/inference/status/{task_id}', response_model=requests.InferenceStatus)
+@api.get('/inference/status/{task_id}', response_model=requests.TaskStatus)
 async def get_inference_status(task_id: str, db: Session = Depends(get_db)):
     """This si the endpoint to get the results of an inference."""
     crud.create_event(db, 'status')
@@ -82,14 +84,16 @@ async def get_inference_status(task_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail='Task failed')
 
     if not task.ready():
-        return requests.InferenceStatus(
+        return requests.TaskStatus(
             task_id=db_inf.task_id,
             status=db_inf.status,
+            type='inference',
         )
 
-    return requests.InferenceStatus(
+    return requests.TaskStatus(
         task_id=db_inf.task_id,
         status=db_inf.status,
+        type='inference',
     )
 
 
@@ -102,7 +106,11 @@ async def get_inference_results(task_id: str, limit: int=10, db: Session = Depen
     """
     crud.create_event(db, 'results')
 
-    return crud.get_results_locations(db, task_id, limit)
+    locations = crud.get_results_locations(db, task_id, limit)
+
+    crud.mark_locations_as_shown(db, task_id, locations)
+
+    return locations
 
 
 @api.put('/inference/select/')
@@ -111,12 +119,32 @@ async def get_click(label: requests.LabelData, db: Session = Depends(get_db)):
     A click will be registered as a label on the data"""
     crud.create_event(db, 'selection')
 
-    db_result = crud.update_result_label(db, label.task_id, label.location_id)
+    if label.location_id == -1:
+        crud.create_event(db, 'bad_inference')
+        return
 
-    if db_result is None:
-        return HTTPException(404, f"Result not found: invalid task_id or location_id")
+    else:
+        crud.create_event(db, 'good_inference')
+        db_result = crud.update_result_label(db, label.task_id, label.location_id)
 
-    return db_result
+        if db_result is None:
+            return HTTPException(404, f"Result not found: invalid task_id or location_id")
+
+        return db_result
+
+
+@api.post('/train/start')
+async def schedule_training(db: Session = Depends(get_db)):
+    crud.create_event(db, 'training')
+
+    task: AsyncResult = training.delay()
+
+    db_model = crud.create_model(db, task.task_id, task.status)
+    return requests.TaskStatus(
+        task_id=db_model.task_id,
+        status=db_model.status,
+        type='training'
+    )
 
 
 @api.get('/content/info')
