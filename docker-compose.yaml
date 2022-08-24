@@ -1,23 +1,29 @@
 version: '3.3'
 
 networks:
+  # Services in this network will be accessible only by other services
   mlpnet:
+  # Services in this network can be accessed by the world (via Traefik)
   www:
     external: true
 
 services:
+
+  # Message broker: manager for the task queue
   rabbitmq:
     image: rabbitmq
     # ports: 5672
     networks:
       - mlpnet
 
+  # NoSQL database for caching results
   redis:
     image: redis
     # ports: 6379
     networks:
       - mlpnet
 
+  # Tracking and metric service
   prometheus:
     image: prom/prometheus
     networks:
@@ -31,6 +37,7 @@ services:
       - "traefik.http.routers.mlprom.entrypoints=web"
       - "traefik.http.services.mlprom.loadbalancer.server.port=9090"
 
+  # Storage for all data
   database:
     image: postgres
     environment:
@@ -39,14 +46,9 @@ services:
       - POSTGRES_DB=${DATABASE_SCHEMA}
     networks:
       - mlpnet
-      - www
     # ports: 5432
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.monitordb.rule=Host(`monitordb.${DOMAIN}`)"
-      - "traefik.http.routers.monitordb.entrypoints=web"
-      - "traefik.http.services.monitordb.loadbalancer.server.port=5432"
 
+  # Celery worker
   worker:
     image: cas.mlp.worker
     build:
@@ -66,6 +68,7 @@ services:
       - rabbitmq
       - database
 
+  # Service that expose the API
   api:
     image: cas.mlp.api
     build:
@@ -88,6 +91,7 @@ services:
       - "traefik.http.routers.mlpapi.entrypoints=web"
       - "traefik.http.services.mlpapi.loadbalancer.server.port=4789"
 
+  # Dashboard
   grafana:
     image: grafana/grafana-oss
     environment:

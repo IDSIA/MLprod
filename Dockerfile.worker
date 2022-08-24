@@ -1,3 +1,5 @@
+# Multi-stage build for the service that implement the celery worker.
+
 # Build stage
 FROM python:3.10 AS builder
 

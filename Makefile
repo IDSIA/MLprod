@@ -1,3 +1,4 @@
+# This is an utility for simplify the execution of repetitive commands using docker-compose.
 build:
 	docker-compose build
 

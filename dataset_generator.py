@@ -1,9 +1,8 @@
-# %%
+from datas import read_user_config, generate_user_data_from_config, read_location_config, generate_location_data_from_config
+from datas.users import generate_user_labeller_from_config
+
 import numpy as np
 import pandas as pd
-
-from datas import read_user_config, generate_user_data_from_config, read_location_config, generate_location_data_from_config, UserLabeller
-from datas.users import generate_user_labeller_from_config
 
 r = np.random.default_rng(42)
 
@@ -14,8 +13,6 @@ DATASET_USER = 'dataset/dataset_users.tsv'
 DATASET_LOC = 'dataset/dataset_locations.tsv'
 DATASET_LABEL = 'dataset/dataset_labelled.tsv'
 
-#%%
-
 # Read pandas into dicts
 print(f"Loading {USER_CONFIG}... ", end="")
 user_settings = read_user_config(USER_CONFIG)
@@ -25,7 +22,7 @@ print(f"Loading {LOC_CONFIG}... ", end="")
 loc_settings = read_location_config(LOC_CONFIG)
 print("Done")
 
-# %% -----------------------------------------------------------------------
+# -----------------------------------------------------------------------
 
 print("Generating user data...", end="")
 
@@ -44,7 +41,7 @@ df_user.to_csv(DATASET_USER, index=False, header=True, sep='\t')
 
 print("Done")
 
-# %% -----------------------------------------------------------------------
+# -----------------------------------------------------------------------
 
 print("Generating location data... ", end="")
 
@@ -64,7 +61,7 @@ df_data.to_csv(DATASET_LOC, index=False, header=True, sep='\t')
 
 print("Done")
 
-# %% -----------------------------------------------------------------------
+# -----------------------------------------------------------------------
 
 print("Labelling data... ", end="")
 
