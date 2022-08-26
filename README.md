@@ -89,7 +89,7 @@ Some parameters can be used to control the behavior of the users:
 
 ## Development
 
-To develop this application, a [Python virutal environmnet](https://docs.python.org/3/tutorial/venv.html) is highl recommended. If a development machine with Docker is not available, it is possible to use the three `requirements.txt` file to create a fully working environment:
+To develop this application, a [Python virutal environmnet](https://docs.python.org/3/tutorial/venv.html) is highly recommended. If a development machine with Docker is not available, it is possible to use the three `requirements.txt` file to create a fully working environment:
 
 * `requirements.api.txt` contains all the packages for the API service,
 * `requirements.worker.txt` contains all the packages for the Celery worker service,
