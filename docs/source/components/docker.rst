@@ -11,8 +11,26 @@ a very big community.
 .. note::
     Docker installation is possible on Linux, Windows and Mac OS, please refer to the official documentation a https://docs.docker.com.
 
-Our dockers 
-===========
+In this page we will explain how we made every components of our deployment system running inside a container.
+We will show you our custom-made Dockerfiles and how we manage to interconnect every container using *docker-compose*. 
+
+Introduction
+============
+
+A Docker container can be seen as a very light virtual machine where the kernel is not virtualized. 
+Every single container contains an operating system and the *Dockerfile* defines the commands and operations needed to setup the environment for the application. 
+
+Once a *Dockerfile* is written, it needs to be "built" into an *image* and images are nothing more than a snapshot of th initial state of a container.
+Starting a container consist of taking an image and running what there is inside.
+
+Independent container can communicate between each other through what is called *a docker network*, which can be seen as a local network created by Docker.
+When many containers are spawned at the same time and connected to the same docker network, we call the system a *docker swarm*.
+
+In our deployment system, to make the swarm running in one command, we use a tool called *docker-compose*. This tool lets you setup the entire swarm
+in a single yaml file. Each container has it own entry in the file, and the developer can define additional settings like environment variable.
+
+Our custom dockers 
+==================
 
 In our deployment solution we use 7 dockers interconnected by shared network. These are:
 
@@ -24,30 +42,160 @@ In our deployment solution we use 7 dockers interconnected by shared network. Th
     * Prometheus (monitoring system)
     * Grafana (statistics dashboard)
 
-Actually there is an additional docker running Traefik which make possible to use sub-domains in out application.
+Actually there is an additional docker running `Traefik`_ which make possible to use sub-domains in our application.
 
 Docker are defined by *Dockerfile* which are text file containing many the commands to setup the image. We use custom
 Dockerfiles only for our API and Celery, while for the others software, we use standard docker images pulled from `Docker Hub`_.
 
+.. Note::
+    Dockerfiles may contains some optimization, like multi-stage build, that is out of the scope of this documentation.
+    Please refere to the official docker documentation for additional material if interested.
 
+FastAPI
+-------
 
-**Dockerfile.api**
+Running *FastAPI* requires a customized docker image since we need a linux OS with python and other tools installed.
+In **Dockerfile.api** we defined the environment for our application and it is shown below with line-by-line explanations.
+
+* We tell Docker to start from a generic image containing Python 3.10
 
 .. literalinclude:: ../../../Dockerfile.api
-    :language: text
+    :language: docker
+    :lines: 3-4
 
-**Dockerfile.worker**
+* We create a *virtual env* environment and install the python packages from the file requirements.txt (copied from the local storage)
+
+.. literalinclude:: ../../../Dockerfile.api
+    :language: docker
+    :lines: 6-14
+
+* We exploit the multi-stage build for better performances and less memory consumption.
+
+.. literalinclude:: ../../../Dockerfile.api
+    :language: docker
+    :lines: 16-17
+
+* We add python from the virtual environment to the linux PATH environment variable.
+
+.. literalinclude:: ../../../Dockerfile.api
+    :language: docker
+    :lines: 18
+
+* We copy the virtual environment from the previus build stage to the current one.
+
+.. literalinclude:: ../../../Dockerfile.api
+    :language: docker
+    :lines: 20-21
+
+* We setup the working directory and copy from the local storage the necessary files.
+
+.. literalinclude:: ../../../Dockerfile.api
+    :language: docker
+    :lines: 23-29
+
+* We setup the command to run *FastAPI* when the docker image is spawned inside a container. 
+
+.. literalinclude:: ../../../Dockerfile.api
+    :language: docker
+    :lines: 31
+
+
+Celery worker
+-------------
+
+Running *Celery* requires a customized docker image just like *FastAPI*. 
+In **Dockerfile.worker** we define the environment for the distributed queue manager, line-by-line explanation is done below.
+
+* We tell Docker to start from a generic image containing Python 3.10 and we perform the same operations explained for *FastAPI*. The only change is in the python requirements used to setup the virtual environment.
 
 .. literalinclude:: ../../../Dockerfile.worker
-    :language: text
+    :language: docker
+    :lines: 3-21
+
+* We setup the working directory and copy from the local storage the necessary files. We copy the tasks to be run asynchronously and the database classes.
+
+.. literalinclude:: ../../../Dockerfile.worker
+    :language: docker
+    :lines: 23-26
+
+* We setup the command to run *Celery* when the docker image is spawned inside a container. 
+
+.. literalinclude:: ../../../Dockerfile.worker
+    :language: docker
+    :lines: 28
+
 
 Docker compose
 ==============
 
-All the dockers are managed by a *docker-compose* file defined as follows:
+Custom dockers and all the others are managed by *docker-compose.yml*.
+
+We will now go thourgh the definition of each docker, starting from the internal network definition that makes possible
+for them to communicate internally.
+
+* docker-compose version to be used
 
 .. literalinclude:: ../../../docker-compose.yaml
     :language: yaml
+    :lines: 1
+
+
+* Internal network definition, *mlpnet* and *www* are the aliases for the 2 networks.
+
+.. literalinclude:: ../../../docker-compose.yaml
+    :language: yaml
+    :lines: 3-8
+
+* We run RabbitMQ without any particular configuration, we just start the container using default configuration and port 5672 to communicate over the *mlpnet*.
+
+.. literalinclude:: ../../../docker-compose.yaml
+    :language: yaml
+    :lines: 12-17
+
+* Also Redis is run using default settings and port 6379 on *mlpnet*.
+
+.. literalinclude:: ../../../docker-compose.yaml
+    :language: yaml
+    :lines: 19-24
+
+* Prometheus needs a little bit of configuration. We start from a standard image and give access to both *mlpnet* and *www* networks (the latter for Traefik).
+  Prometheus configuration file is loaded by telling docker-compose to mount the *prometheus.yaml* file inside the docker. *Labels* tag is for Traefik only.
+
+.. literalinclude:: ../../../docker-compose.yaml
+    :language: yaml
+    :lines: 25-37
+
+* PostgreSQL only needs some environment variables, so we start from a standard docker image and specify the variables using tag *environment:*
+  We then set the network to *mlpnet* and accept default port 5432.
+
+.. literalinclude:: ../../../docker-compose.yaml
+    :language: yaml
+    :lines: 39-48
+
+* Both FastAPI and Celery have a similar setup, both have a custom Dockerfile to be built and some dependencies to be met.
+  We tell docker-compose to build a local image with the tag *build:* and by indicating the dedicated Dockerfile.
+  Environment variable are necessary to communicate setup Celery and communicate with the DB.
+  Using *volumes:* we map the local model folder inside the docker to make the model accessible on both sides.
+  In the end, we define the network and the dependencies to be satisfied to start the container, those are *Redis*, *RabbitMQ* and *PostgreSQL* up and running. 
+
+.. literalinclude:: ../../../docker-compose.yaml
+    :language: yaml
+    :lines: 50-91
+
+* Grafana is the last container we have in our system, it provides a customized dashboard where we can track any metrics we want.
+  For more information about how we monitor the entire deploy please refer to :doc:`monitoring` page.
+  With Grafana we start from a standard docker image, but since monitoring requires reading information from various source we need to 
+  set many environment variables to tell Grafana where is and how to access Prometheus and PostgreSQL.
+  We mount as volumes the customized dashboard and provisioning folder and connect the container to both *mlpnet* and *www* networks.
+  Since Grafana needs PostgreSQL and Prometheus to work, we set those two containers as dependencies.
+
+.. literalinclude:: ../../../docker-compose.yaml
+    :language: yaml
+    :lines: 93-
+
+
+Environment variable
+====================
 
 Docker compose needs some environmental variables to be set locally before starting the container swarm, this could be
 done by creating a *.env* file like the following one:
@@ -69,8 +217,9 @@ done by creating a *.env* file like the following one:
 
     GRAFANA_ADMIN_PASS=grafana
 
-
+In our case, environment variables are nothing more than URL strings and login credentials.
 
 .. _Docker: https://www.docker.com/
 .. _Cloud Native Computing Foundation: https://www.cncf.io/
 .. _Docker Hub: https://hub.docker.com/
+.. _Traefik: https://traefik.io/

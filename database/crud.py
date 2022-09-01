@@ -327,7 +327,7 @@ def count_models(db: Session) -> int:
 
 
 def create_event(db: Session, event: str) -> Event:
-    """Insert a new event into thte database.
+    """Insert a new event into the database.
     
     :param db:
         Session with the connection to the database.

@@ -65,7 +65,7 @@ async def schedule_inference(user_data: requests.UserData, db: Session = Depends
 
 @api.get('/inference/status/{task_id}', response_model=requests.TaskStatus)
 async def get_inference_status(task_id: str, db: Session = Depends(get_db)):
-    """This si the endpoint to get the results of an inference."""
+    """This is the endpoint to get the results of an inference."""
     crud.create_event(db, 'status')
     
     task = AsyncResult(task_id)

@@ -71,6 +71,7 @@ code for route: */inference/start*:
     :language: python
     :lines: 50-64
     
+Description of every single route is writter in :doc:`routes`.
 
 .. _Celeryref:
 
@@ -86,18 +87,33 @@ an inference, it could be quite annoying to have the website freezed for until t
 Celery needs a startup file and a configuration file, and writing them could be quite challenging for complex system.
 In out example we kept them easy and configure just the bare minimum to make it work as intended.
 
-**celery.py**
+Deploying a system that scale up with the computational load is mandatory, we implemented two tasks in Celery:
+
+    * Model training
+    * Inference on the trained model
+
+Implementation of these two tasks is described in :doc:`tasks`
+
+Configuration
+-------------
+
+*Celery* is configured by using two python files:
+
+    * *celery.py*
+    * *celeryconfig.py
+
+In the first file we create a Python object ``worker`` pointing to a *Celery* instance. This object represents the *Celery application*
+and works as entry point for every operations with Celery. The object *Celery* is instantiated giving a name, a 
+reference to a backend (in our case :ref:`Redisref`) and a reference to a message broker (in our case :ref:`RabbitMQref`). 
+Once the object is created, we load our custom configuration file using ``config_from_object`` and then at line 17, we
+start *Celery*.
+
+*celery.py*:
 
 .. literalinclude:: ../../../worker/celery.py
+    :linenos:
     :language: python
 
-
-**celeryconfig.py**
-
-.. literalinclude:: ../../../worker/celeryconfig.py
-    :language: python
-
-Basically, we tell celery where is the code to run in **celeryconfig.py** and how to start itself in **config.py**.
 The environments variable used in the latter file have to be set at system level, in our case their values are:
 
 .. code-block:: python
@@ -105,16 +121,13 @@ The environments variable used in the latter file have to be set at system level
     CELERY_BROKER_URL=pyamqp://rabbitmq/
     CELERY_BACKEND_URL=redis://redis/
 
-Deploying a system that scale up with the computational load is mandatory, we implemented two tasks in Celery:
+In this file we configure *Celery* such that it can load and start on request the tasks we want to run asynchronously.
 
-    * Model training
-    * Inference on the trained model
+*celeryconfig.py*:
 
-To show an example, the following snippet implements the asynchronous inference on a trained model:
-
-.. literalinclude:: ../../../worker/tasks/inference.py
+.. literalinclude:: ../../../worker/celeryconfig.py
     :language: python
-    :lines: 26-
+
 
 .. _Redisref:
 
@@ -136,7 +149,8 @@ RabbitMQ
 A message broker is usually necessarly when two modules needs a translation layer to communicate correctly. RabbitMQ is a
 well supported solution which provides a web-based graphical interface useful to monitoring the intercommunation.
 
-RabbitMQ has a lot of customizations, but we run it in very basic setup for out toy example.
+RabbitMQ has a lot of customizations, but we run it in very basic setup for our toy example.
+
 
 
 .. _FastAPI: https://fastapi.tiangolo.com/
