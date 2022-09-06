@@ -9,12 +9,14 @@ out choices.
     Deployment setups diffeere from problem to problem, and out proposed solution may not work for a particular
     use case. It is not our idea to impose a particular deployment solution.
 
-In this project we are going to use the following open source modules:
+The system we want to build has to takle the following requirements:
 
-    * :ref:`FastAPIref`
-    * :ref:`Celeryref`
-    * :ref:`Redisref`
-    * :ref:`RabbitMQref`
+    * We want to develop a service to let the users interact with out model. We use :ref:`FastAPIref` to build quickly build a reliable solution.
+    * We have a concurrent setup (many users may interact with the APIs at the same time), we need a way to
+      schedule asynchronous tasks in a distributed environment. :ref:`Celeryref` offers us the tools to satisfy those requirements. 
+    * *Celery* has its own interface, instead of implementing a dedicated piece of code, we use :ref:`RabbitMQref` as message broker.
+    * This creates for us an asynchronous environment, we need a way to cache the results. The NoSQL database :ref:`Redisref` makes a fast and powerful caching service.
+    * Finally, we need a tool to store structured data like users and locations data. `_PostgreSQL` is a modern realtional database that does this work.
 
 
 Basic deployment schema
@@ -62,7 +64,8 @@ More specifically, we implemented the following API:
     "/inference/results/{task_id}", "Get the prediction from the model once the inference task is finished"
     "/inference/select/", "Select the best place among the top ranked places"
     "/train/start", "Train a new model"
-    "/content/{value}", "Get monitoring statistics"
+    "/content/{value}", "Get debugging content from database"
+    "/metrics", "Get monitoring statistics"
 
 As an example of how the routes are implemented, the following snippet shows the
 code for route: */inference/start*:
@@ -100,7 +103,7 @@ Configuration
 *Celery* is configured by using two python files:
 
     * *celery.py*
-    * *celeryconfig.py
+    * *celeryconfig.py*
 
 In the first file we create a Python object ``worker`` pointing to a *Celery* instance. This object represents the *Celery application*
 and works as entry point for every operations with Celery. The object *Celery* is instantiated giving a name, a 
@@ -157,3 +160,4 @@ RabbitMQ has a lot of customizations, but we run it in very basic setup for our 
 .. _Celery: https://docs.celeryq.dev/en/stable/
 .. _Redis: https://redis.io/
 .. _RabbitMQ: https://www.rabbitmq.com/
+.. _PostgreSQL: https://www.postgresql.org/
