@@ -10,7 +10,7 @@ Having an optimal monitoring system helps in:
     * Knowing exactly the causes of the problems
     * Knowing where problems happen and the actions to take
 
-A monitring system is usually made by a piece of software that records some metrics and a dashboard
+A monitoring system is usually made by a piece of software that records some metrics and a dashboard
 that shows those metrics and statistics. Metrics could be recorded from the infrastructure, like hardware status,
 or directly from the code.
 
@@ -48,17 +48,17 @@ We defines the tracking objects like in the following snippet:
     :linenos:
     :lines: 31-35
 
-Here for example we have Counter for the total number of HTTP request, but many other types are avaiable like Histograms.
+Here for example we have Counter for the total number of HTTP request, but many other types are available like Histograms.
 
 Once every statistics is associated to an object, we create an asynchronous function named *dispatch*. 
-The so called *dispatcher* is responsible to tracking the statistics and make them aviable.
+The so called *dispatcher* is responsible to tracking the statistics and make them available.
 
 The last component of our middleware is the function that creates some dedicated HTTP routes where monitoring
 software, like Grafana, can retrieve and show the data.
 
 The above description is just a vey simple overview of the components. 
 The detailed mechanism that make this piece of code compatible with *FastAPI* is not very intuitive and the explanation
-goes for beyond the scope of this documentation. If you want more details, please refere to the aforementioned
+goes for beyond the scope of this documentation. If you want more details, please refer to the aforementioned
 GitHub repository.
 
 .. _grafanaref:
@@ -83,7 +83,7 @@ We defined the following provisioning configuration files:
 
 
 Since Grafana can read data from more than one datasource, we decided to monitor both Prometheus and PostegreSQL.
-The following snippet shows the condiguration needed to make the above working:
+The following snippet shows the configuration needed to make the above working:
 
 .. literalinclude:: ../../../grafana/provisioning/datasources/datasources.yml
     :language: yaml
@@ -91,8 +91,8 @@ The following snippet shows the condiguration needed to make the above working:
     :lines: 4-
 
 Here there are shown many settings, but the most important are the URLs and the credentials. Basically we are telling
-Grafana where to look for metrics and how to access the componens. For example at line 8 and 24, we are telling
-telling to Grafana the URLs of Prometheus and PostgreSQL, and for the latter also the usename, password and the database
+Grafana where to look for metrics and how to access the components. For example at line 8 and 24, we are telling
+telling to Grafana the URLs of Prometheus and PostgreSQL, and for the latter also the username, password and the database
 name. All this information are used to setup connections and observe the metrics while being published.
 
 Once the datasources are set, we move to the dashboards. Since we want to customize the UI of our monitoring system, we can use
@@ -107,16 +107,19 @@ custom dashboard:
 Dashboard
 ---------
 
+.. image:: ../_static/images/dashboard.png
+    :align: center
+
 Custom dashboards in Grafana can be defined in two ways:
 
     * By hand
     * By building them directly into the UI and export the setup
 
-Usually the best option is to build one grafically and then export the *json* file, which is quite huge.
+Usually the best option is to build one graphically and then export the *json* file, which is quite huge.
 
 A dashboard is composed by panels, and each panel shows a statistic in a specific format.
 What a panel does is usually a query to a data source, like Prometheus, and then display the data following
-some style directives like, for exmple, the type of plot. 
+some style directives like, for example, the type of plot. 
 
 The following image shows an example of a panel displaying ...
 

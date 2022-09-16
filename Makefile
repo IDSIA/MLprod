@@ -13,5 +13,8 @@ reload:
 	docker-compose up -d
 
 grafana:
-	dcoker-compose stop grafana
+	docker-compose stop grafana
 	docker-compose start grafana
+
+doc:
+	sphinx-build -b html docs/source/ docs/build/html
