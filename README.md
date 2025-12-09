@@ -1,5 +1,9 @@
 # Machine Learning in Production 
 
+# Notes
+
+> Install with `pip install -e .[dev] --index-url https://download.pytorch.org/whl/cpu` to have CPU version of torch
+
 
 ## Run the dockers
 

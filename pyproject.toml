@@ -1,0 +1,161 @@
+# =============================================================================
+# PEP 621: Project Metadata
+# https://peps.python.org/pep-0621/
+# =============================================================================
+[project]
+name = "MLProd"
+version = "1.0.0"
+description = "Machine Learning in Production."
+readme = "README.md"
+authors = [
+  { name = "Claudio Bonesana" },
+  { name = "Stefano Toniolo" },
+]
+license = { text = "MIT" }
+requires-python = ">=3.12"
+keywords = ["machine learning", "production", "deployment", "MLOps"]
+
+classifiers = [
+
+]
+
+# --- Core Dependencies ---
+dependencies = [
+    "pandas~=2.3.3",
+    "python-dotenv~=1.2.1",
+    "pydantic~=2.12.5",
+    "tqdm~=4.67.1",
+]
+
+# --- Optional Dependencies ---
+[project.optional-dependencies]
+notebook = [
+    "jupyterlab~=4.5.0",
+    "matplotlib~=3.10.7",
+    "requests~=2.32.5",
+    "seaborn~=0.13.2",
+]
+
+api = [
+    "celery~=5.6.0",
+    "fastapi-sqlalchemy~=0.2.1",
+    "fastapi~=0.124.0",
+    "prometheus-client~=0.23.1",
+    "psycopg2-binary~=2.9.1",
+    "redis~=7.1.0",
+    "scikit-learn~=1.7.2",
+    "sqlalchemy~=2.0.44",
+    "torch~=2.9.0",
+    "uvicorn~=0.38.0",
+]
+
+worker = [
+    "celery~=5.6.0",
+    "psycopg2-binary~=2.9.1",
+    "redis~=7.1.0",
+    "scikit-learn~=1.7.2",
+    "sqlalchemy~=2.0.44",
+    "torch~=2.9.0",
+]
+
+docs = [
+    "sphinx~=9.0.4",
+]
+
+test = [
+    "pytest>=9.0.2",
+    "pytest-cov>=7.0",
+]
+
+dev = [
+    "mlprod[test,notebook,api,worker,docs]",
+    "ruff>=0.14.0",
+    "pre-commit>=4.5.0",
+    "mypy>=1.19.0",
+]
+
+# --- Project URLs ---
+[project.urls]
+Homepage = "https://machine-learning-in-production.readthedocs.io/en/latest/index.html"
+Repository = "https://github.com/IDSIA/MLprod"
+"Bug Tracker" = "https://github.com/IDSIA/MLprod/issues"
+
+
+# =============================================================================
+# Build System Configuration
+# =============================================================================
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+
+# =============================================================================
+# Tool Configurations
+# =============================================================================
+
+# --- Setuptools Configuration ---
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# --- Ruff Linter & Formatter Configuration ---
+# Your provided detailed configuration is integrated here.
+[tool.ruff]
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".bzr", ".direnv", ".eggs", ".git", ".git-rewrite", ".hg",
+    ".ipynb_checkpoints", ".mypy_cache", ".nox", ".pants.d", ".pyenv",
+    ".pytest_cache", ".pytype", ".ruff_cache", ".svn", ".tox", ".venv",
+    ".vscode", "__pypackages__", "_build", "buck-out", "build", "dist",
+    "node_modules", "site-packages", "*env", "logs",
+]
+# Same as Black.
+line-length = 88
+indent-width = 4
+# Assume Python 3.12
+target-version = "py312"
+
+[tool.ruff.lint]
+# Enable Pyflakes (`F`), specific pycodestyle (`E`) codes, and docstring checks (`D`).
+select = ["D", "E4", "E7", "E9", "F"]
+ignore = ["D100", "D104", "D415"]
+# Allow fix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"
+# Like Black, respect magic trailing commas.
+skip-magic-trailing-comma = false
+# Like Black, automatically detect the appropriate line ending.
+line-ending = "auto"
+# Enable auto-formatting of code examples in docstrings.
+docstring-code-format = true
+# Set the line length limit used when formatting code snippets in docstrings.
+docstring-code-line-length = "dynamic"
+
+
+# --- Pytest Configuration ---
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+addopts = [
+    "-v",
+    "--cov=src/",
+    "--cov-report=term-missing",
+]
+
+# --- MyPy Static Type Checker Configuration ---
+[tool.mypy]
+python_version = "3.12" # Aligned with ruff's target-version
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+disallow_untyped_defs = true

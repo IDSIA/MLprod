@@ -1,6 +1,0 @@
-jupyter
-matplotlib
-requests
-python-dotenv
-seaborn
-tqdm
