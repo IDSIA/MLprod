@@ -33,7 +33,7 @@ def init_content(db: Session):
 
     if n_locations == 0:
         # if not populated, add data
-        df = pd.read_csv("./dataset/dataset_locations.tsv", sep="\t")
+        df = pd.read_csv("./data/dataset_locations.tsv", sep="\t")
         df["id"] = np.arange(df.shape[0])
 
         db.bulk_insert_mappings(Location, df.to_dict(orient="records"))  # type: ignore

@@ -9,13 +9,13 @@ timezone = "Europe/Zurich"
 enable_utc = True
 
 imports = (
-    "worker.tasks",
-    "worker.models",
-    "database",
-    "database.crud",
+    "mlprod.worker.tasks",
+    "mlprod.worker.models",
+    "mlprod.database",
+    "mlprod.database.crud",
 )
 
 include = [
-    "worker.tasks.inference",
-    "worker.tasks.train",
+    "mlprod.worker.tasks.inference",
+    "mlprod.worker.tasks.train",
 ]

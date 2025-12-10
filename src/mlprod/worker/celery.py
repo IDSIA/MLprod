@@ -11,7 +11,7 @@ worker = Celery(
     broker=os.getenv("CELERY_BROKER_URL"),
 )
 
-worker.config_from_object("worker.celeryconfig")
+worker.config_from_object("mlprod.worker.celeryconfig")
 
 
 if __name__ == "__main__":

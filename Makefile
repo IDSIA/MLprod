@@ -1,20 +1,20 @@
 # This is an utility for simplify the execution of repetitive commands using docker-compose.
 build:
-	docker-compose build
+	docker compose --env-file .env -f docker/docker-compose.yaml -p mlprod build
 
 start:
-	docker-compose up -d
+	docker compose --env-file .env -f docker/docker-compose.yaml -p mlprod up -d
 
 stop:
-	docker-compose down
+	docker compose --env-file .env -f docker/docker-compose.yaml -p mlprod down
 
 reload:
-	docker-compose build
-	docker-compose up -d
+	docker compose --env-file .env -f docker/docker-compose.yaml -p mlprod build
+	docker compose --env-file .env -f docker/docker-compose.yaml -p mlprod up -d
 
 grafana:
-	docker-compose stop grafana
-	docker-compose start grafana
+	docker compose --env-file .env -f docker/docker-compose.yaml -p mlprod stop grafana
+	docker compose --env-file .env -f docker/docker-compose.yaml -p mlprod start grafana
 
 doc:
 	sphinx-build -b html docs/source/ docs/build/html

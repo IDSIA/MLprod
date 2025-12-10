@@ -1,7 +1,10 @@
+from typing import Self
+
 from mlprod.api.requests import LocationData, UserData
 from mlprod.data import read_user_config, generate_user_data, UserLabeller, UserConfig
 
 from pathlib import Path
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from time import sleep
 
@@ -23,10 +26,11 @@ class Config(BaseSettings):
     """Configure the parameters of the traffic generator."""
 
     model_config = SettingsConfigDict(
+        env_file=".env",
         cli_parse_args=True,
         cli_ignore_unknown_args=True,
         cli_implicit_flags=True,
-        extra="forbid",
+        extra="allow",
     )
 
     """Set fixed seed."""
@@ -36,7 +40,7 @@ class Config(BaseSettings):
     """If set, no sleeps are used"""
     no_sleep: bool = False
     """User config file to use"""
-    config: Path = Path("./config/user.tsv")
+    config: Path = Path("./configs/user.tsv")
 
     """Decision level, the amount of responses that will also have a feedback (set a label)."""
     d: float = 1.0
@@ -50,6 +54,18 @@ class Config(BaseSettings):
     tmin: float = 0.1
     """Maximum time to wait in seconds."""
     tmax: float = 3.0
+
+    url: str = ""
+    domain: str = ""
+
+    @model_validator(mode="after")
+    def set_url(self) -> Self:
+        """Make sure that URL and domain are set correctly when no URL is specified."""
+        if not self.url:
+            self.domain = self.domain or "localhost"
+            self.url = f"http://mlpapi.{self.domain}"
+
+        return self
 
 
 class TrafficGenerator(multiprocessing.Process):
@@ -263,6 +279,8 @@ if __name__ == "__main__":
         URL = f"http://mlpapi.{DOMAIN}"
 
     config = Config()
+
+    print("Input parameters:\n", config.model_dump_json(indent=4))
 
     event = multiprocessing.Event()
 

@@ -1,5 +1,3 @@
-version: '3.3'
-
 networks:
   # Services in this network will be accessible only by other services
   mlpnet: # Services in this network can be accessed by the world (via Traefik)
@@ -60,7 +58,7 @@ services:
       - CELERY_QUEUE=${CELERY_QUEUE}
       - DATABASE_URL=postgresql://${DATABASE_USER}:${DATABASE_PASS}@${DATABASE_HOST}/${DATABASE_SCHEMA}
     volumes:
-      - ./models:/app/models
+      - ../models:/app/models
     networks:
       - mlpnet
     depends_on:
@@ -107,8 +105,8 @@ services:
       - DS_POSTGRES_PASSWORD=${DATABASE_PASS}
       - DS_POSTGRES_DB=${DATABASE_SCHEMA}
     volumes:
-      - ./grafana/provisioning:/etc/grafana/provisioning
-      - ./grafana/dashboards:/var/lib/grafana/dashboards
+      - ../grafana/provisioning:/etc/grafana/provisioning
+      - ../grafana/dashboards:/var/lib/grafana/dashboards
     # ports: 3000
     networks:
       - mlpnet

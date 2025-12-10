@@ -20,13 +20,17 @@ COPY . .
 
 RUN pip install .[node]
 
+
 # Installation stage
-FROM python:3.10-slim-buster AS base
+FROM python:3.12-slim AS base
 ENV PATH="/opt/venv/bin:${PATH}"
 
 # Copy built environment to base
 COPY --from=builder /opt/venv /opt/venv
 
 WORKDIR /app
+
+COPY models/ models/
+COPY data/ data/
 
 CMD ["celery", "-A", "mlprod.worker.celery", "worker", "-l", "INFO"]
