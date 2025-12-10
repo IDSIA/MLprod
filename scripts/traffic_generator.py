@@ -1,11 +1,10 @@
 from MLProd.api.requests import LocationData, UserData
-from MLProd.data import read_user_config, generate_user_data_from_config
-from MLProd.data.users import generate_user_labeller_from_config
+from MLProd.data import read_user_config, generate_user_data, UserLabeller, UserConfig
 
 from pathlib import Path
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from time import sleep
 
-import argparse
 import logging
 import multiprocessing
 import numpy as np
@@ -13,55 +12,44 @@ import os
 import requests
 import signal
 
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(name)s %(levelname)5s %(message)s",
 )
 
 
-def setup_arguments():
-    """Defines the available input parameters"""
-    parser = argparse.ArgumentParser()
+class Config(BaseSettings):
+    """Configure the parameters of the traffic generator."""
 
-    parser.add_argument("--seed", help="Set fixed seed", default=42, type=int)
-    parser.add_argument(
-        "-n", help="Number of requests to do, 0 means infinite", default=None, type=int
-    )
-    parser.add_argument(
-        "--no-sleep",
-        help="If set, no sleeps are used",
-        default=False,
-        action="store_true",
-    )
-    parser.add_argument(
-        "--config",
-        help="User config file to use",
-        default="./config/user.tsv",
-        type=str,
-    )
-    parser.add_argument(
-        "-d",
-        help="Decision level, the amount of responses that will also have a feedback (set a label). Default: 1.0",
-        default=1.0,
-        type=float,
-    )
-    parser.add_argument(
-        "-p", help="Number of parallel generators.", default=1, type=int
-    )
-    parser.add_argument(
-        "-a", help="Parameter `a` of beta function", default=2.0, type=float
-    )
-    parser.add_argument(
-        "-b", help="Parameter `b` of beta function", default=5.0, type=float
-    )
-    parser.add_argument(
-        "-tmin", help="Minimum time to wait (default: 100ms)", default=0.1, type=float
-    )
-    parser.add_argument(
-        "-tmax", help="Maximum time to wait (default: 3s)", default=3.0, type=float
+    model_config = SettingsConfigDict(
+        cli_parse_args=True,
+        cli_ignore_unknown_args=True,
+        cli_implicit_flags=True,
+        extra="forbid",
     )
 
-    return parser.parse_args()
+    """Set fixed seed."""
+    seed: int = 42
+    """Number of requests to do, 0 means infinite"""
+    n: int | None = None
+    """If set, no sleeps are used"""
+    no_sleep: bool = False
+    """User config file to use"""
+    config: Path = Path("./config/user.tsv")
+
+    """Decision level, the amount of responses that will also have a feedback (set a label)."""
+    d: float = 1.0
+    """Number of parallel generators."""
+    p: int = 1
+    """Parameter `a` of beta function."""
+    a: float = 2.0
+    """Parameter `b` of beta function."""
+    b: float = 5.0
+    """Minimum time to wait in seconds."""
+    tmin: float = 0.1
+    """Maximum time to wait in seconds."""
+    tmax: float = 3.0
 
 
 class TrafficGenerator(multiprocessing.Process):
@@ -212,14 +200,16 @@ class TrafficGenerator(multiprocessing.Process):
             try:
                 # choose next user ----------------------------------------
                 x = r.choice(np.arange(len(self.user_configs)))
-                user_config = self.user_configs[x]
+                user_config: UserConfig = self.user_configs[x]
 
-                logging.info(f"{thread:02} User: {user_config.name}")
+                logging.info(f"{thread:02} User: {user_config.meta_comment}")
 
                 self.sleep()
 
-                user = generate_user_data_from_config(r, user_config)
-                ul = generate_user_labeller_from_config(user_config)
+                start_date = np.datetime64("2026-01-01")
+
+                user = generate_user_data(r, user_config, start_date)
+                ul = UserLabeller(user_config)
 
                 # send new inference request ------------------------------
                 task_id = self.inference_start(user)
@@ -247,7 +237,7 @@ class TrafficGenerator(multiprocessing.Process):
                         )
                         location_id = int(r.choice(location_ids[labels == 1]))
 
-                    logging.info(f"{thread:02} Choosen location with id {location_id}")
+                    logging.info(f"{thread:02} Chosen location with id {location_id}")
 
                 # Register choice -----------------------------------------
                 self.sleep()
@@ -272,7 +262,7 @@ if __name__ == "__main__":
         DOMAIN = os.environ.get("DOMAIN", "localhost")
         URL = f"http://mlpapi.{DOMAIN}"
 
-    args = setup_arguments()
+    config = Config()
 
     event = multiprocessing.Event()
 
@@ -285,19 +275,19 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, main_signal_handler)
     signal.signal(signal.SIGTERM, main_signal_handler)
 
-    n_workers = min(os.cpu_count(), args.p)
+    n_workers = min(os.cpu_count() or 1, config.p)
 
     workers = [
         TrafficGenerator(
-            args.seed + i,
-            args.config,
+            config.seed + i,
+            config.config,
             URL,
             i + 1,
-            args.a,
-            args.b,
-            args.tmin,
-            max(args.tmin, args.tmax),
-            args.d,
+            config.a,
+            config.b,
+            config.tmin,
+            max(config.tmin, config.tmax),
+            config.d,
             event,
         )
         for i in range(n_workers)

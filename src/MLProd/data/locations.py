@@ -2,12 +2,13 @@ import numpy as np
 import pandas as pd
 
 from MLProd.api.requests import LocationData
+from MLProd.data.configs import LocationConfig
 from MLProd.data.utils import sample_bool, sample_float
 
 from pathlib import Path
 
 
-def read_location_config(config: Path) -> list[dict]:
+def read_location_config(config: Path) -> list[LocationConfig]:
     """Read a configuration from a given path.
 
     This function will read a file in TSV format that contains all the information to
@@ -19,78 +20,47 @@ def read_location_config(config: Path) -> list[dict]:
         A valid path to a TSV file.
     """
     loc_conf = pd.read_csv(config, sep="\t")
-    loc_settings = []
-    for _, row in loc_conf.iterrows():
-        loc_dict = {
-            "name": row["meta_comment"],
-            "qnt": row["meta_n"],
-            "settings": row.iloc[2:].to_dict(),
-        }
-        loc_settings.append(loc_dict)
-
+    loc_settings = [LocationConfig(**row.to_dict()) for _, row in loc_conf.iterrows()]
     return loc_settings
 
 
 def generate_location_data_from_config(
-    r: np.random.Generator, conf: dict
+    r: np.random.Generator, conf: LocationConfig
 ) -> LocationData:
     """Utility wrapper for `generate_location_data()` function."""
-    return generate_location_data(r=r, **conf["settings"])
+    return generate_location_data(r, conf)
 
 
 def generate_location_data(
     r: np.random.Generator,
-    threshold_child: float = 0.5,
-    threshold_breakfast: float = 0.5,
-    threshold_lunch: float = 0.5,
-    threshold_dinner: float = 0.5,
-    price_min: float = 50,
-    price_max: float = 500,
-    threshold_pool: float = 0.5,
-    threshold_spa: float = 0.5,
-    threshold_animals: float = 0.5,
-    threshold_lake: float = 0.5,
-    threshold_mountain: float = 0.5,
-    threshold_sport: float = 0.5,
-    family_min: float = 0.0,
-    family_max: float = 1.0,
-    outdoor_min: float = 0.0,
-    outdoor_max: float = 1.0,
-    food_min: float = 0.0,
-    food_max: float = 1.0,
-    leisure_min: float = 0.0,
-    leisure_max: float = 1.0,
-    service_min: float = 0.0,
-    service_max: float = 1.0,
-    score_min: float = 0.0,
-    score_max: float = 1.0,
+    conf: LocationConfig,
 ) -> LocationData:
-    """Generates the location in a synthtetic way.
+    """Generates the location in a synthetic way.
 
     The objective is create possible numeric descriptors for each location.
 
-    Act on paramters ``a`` and ``b`` for distribution skew.
+    Act on parameters ``a`` and ``b`` for distribution skew.
     """
-    children = sample_bool(r, threshold_child)
-    breakfast = sample_bool(r, threshold_breakfast)
-    lunch = sample_bool(r, threshold_lunch)
-    dinner = sample_bool(r, threshold_dinner)
+    children = sample_bool(r, conf.threshold_child)
+    breakfast = sample_bool(r, conf.threshold_breakfast)
+    lunch = sample_bool(r, conf.threshold_lunch)
+    dinner = sample_bool(r, conf.threshold_dinner)
 
-    price = sample_float(r, price_min, price_max)[0]
+    price = sample_float(r, conf.price_min, conf.price_max)[0]
 
-    pool = sample_bool(r, threshold_pool)
-    spa = sample_bool(r, threshold_spa)
-    animals = sample_bool(r, threshold_animals)
-    lake = sample_bool(r, threshold_lake)
-    mountain = sample_bool(r, threshold_mountain)
-    sport = sample_bool(r, threshold_sport)
+    pool = sample_bool(r, conf.threshold_pool)
+    spa = sample_bool(r, conf.threshold_spa)
+    animals = sample_bool(r, conf.threshold_animals)
+    lake = sample_bool(r, conf.threshold_lake)
+    mountain = sample_bool(r, conf.threshold_mountain)
+    sport = sample_bool(r, conf.threshold_sport)
 
-    family_rating = sample_float(r, family_min, family_max)[0]
-    outdoor_rating = sample_float(r, outdoor_min, outdoor_max)[0]
-    food_rating = sample_float(r, food_min, food_max)[0]
-    leisure_rating = sample_float(r, leisure_min, leisure_max)[0]
-    service_rating = sample_float(r, service_min, service_max)[0]
-    user_score = sample_float(r, score_min, score_max)[0]
+    family_rating = sample_float(r, conf.family_min, conf.family_max)[0]
+    outdoor_rating = sample_float(r, conf.outdoor_min, conf.outdoor_max)[0]
+    food_rating = sample_float(r, conf.food_min, conf.food_max)[0]
+    leisure_rating = sample_float(r, conf.leisure_min, conf.leisure_max)[0]
+    service_rating = sample_float(r, conf.service_min, conf.service_max)[0]
+    user_score = sample_float(r, conf.score_min, conf.score_max)[0]
 
     return LocationData(
         children=children,
