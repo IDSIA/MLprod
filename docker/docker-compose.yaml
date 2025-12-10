@@ -2,8 +2,8 @@ version: '3.3'
 
 networks:
   # Services in this network will be accessible only by other services
-  mlpnet:
-  # Services in this network can be accessed by the world (via Traefik)
+  mlpnet: # Services in this network can be accessed by the world (via Traefik)
+
   www:
     external: true
 
@@ -30,7 +30,7 @@ services:
       - mlpnet
       - www
     volumes:
-      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ../configs/prometheus.yml:/etc/prometheus/prometheus.yml
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.mlprom.rule=Host(`mlprom.${DOMAIN}`)"
@@ -48,12 +48,12 @@ services:
       - mlpnet
     # ports: 5432
 
-  # Celery worker
+    # Celery worker
   worker:
-    image: cas.mlp.worker
+    image: mlprod.node:1.0
     build:
-      context: .
-      dockerfile: Dockerfile.worker
+      context: ..
+      dockerfile: ./docker/Dockerfile.node
     environment:
       - CELERY_BACKEND_URL=${CELERY_BACKEND_URL}
       - CELERY_BROKER_URL=${CELERY_BROKER_URL}
@@ -70,10 +70,10 @@ services:
 
   # Service that expose the API
   api:
-    image: cas.mlp.api
+    image: mlprod.api:1.0
     build:
-      context: .
-      dockerfile: Dockerfile.api
+      context: ..
+      dockerfile: ./docker/Dockerfile.api
     environment:
       - CELERY_BACKEND_URL=${CELERY_BACKEND_URL}
       - CELERY_BROKER_URL=${CELERY_BROKER_URL}

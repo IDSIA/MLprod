@@ -1,0 +1,32 @@
+# Multi stage build for the service that will serve the APIs to the world.
+
+# Build stage
+FROM python:3.12 AS builder
+
+# We will install using a virtual env
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:${PATH}"
+
+# Copy list of required packages
+COPY pyproject.toml .
+
+# Install packages using pip
+RUN pip install --upgrade pip && \
+    pip install pip-tools && \
+    pip-compile pyproject.toml --extra node -o requirements.txt --extra-index-url https://download.pytorch.org/whl/cpu && \
+    pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+RUN pip install .[node]
+
+# Installation stage
+FROM python:3.10-slim-buster AS base
+ENV PATH="/opt/venv/bin:${PATH}"
+
+# Copy built environment to base
+COPY --from=builder /opt/venv /opt/venv
+
+WORKDIR /app
+
+CMD ["celery", "-A", "mlprod.worker.celery", "worker", "-l", "INFO"]

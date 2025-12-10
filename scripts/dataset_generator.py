@@ -1,11 +1,11 @@
-from MLProd.data import (
+from mlprod.data import (
     read_user_config,
     generate_user_data,
     read_location_config,
     generate_location_data,
 )
-from MLProd.api.requests import UserData, LocationData
-from MLProd.data.labels import UserLabeller
+from mlprod.api.requests import UserData, LocationData
+from mlprod.data.labels import UserLabeller
 from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -17,7 +17,6 @@ import pandas as pd
 r = np.random.default_rng(42)
 
 CONFIG_DIR = Path("configs")
-DATASET_DIR = Path("dataset")
 
 
 class Config(BaseSettings):
@@ -32,7 +31,7 @@ class Config(BaseSettings):
 
     user_configs: Path = CONFIG_DIR / "user.tsv"
     location_configs: Path = CONFIG_DIR / "location.tsv"
-    dataset_dir: Path = DATASET_DIR
+    dataset_dir: Path = Path("data")
 
     n_user: int = 1000
     n_loc_per_user: int = 10

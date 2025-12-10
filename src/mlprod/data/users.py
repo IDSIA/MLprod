@@ -1,9 +1,9 @@
 import numpy as np
 import pandas as pd
 
-from MLProd.api.requests import UserData
-from MLProd.data.configs import UserConfig
-from MLProd.data.utils import sample_bool, sample_float, sample_int
+from mlprod.api.requests import UserData
+from mlprod.data.configs import UserConfig
+from mlprod.data.utils import sample_bool, sample_float, sample_int
 
 from pathlib import Path
 from datetime import date

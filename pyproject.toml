@@ -3,7 +3,7 @@
 # https://peps.python.org/pep-0621/
 # =============================================================================
 [project]
-name = "MLProd"
+name = "mlprod"
 version = "1.0.0"
 description = "Machine Learning in Production."
 readme = "README.md"
@@ -37,7 +37,7 @@ notebook = [
     "seaborn~=0.13.2",
 ]
 
-api = [
+node = [
     "celery~=5.6.0",
     "fastapi-sqlalchemy~=0.2.1",
     "fastapi~=0.124.0",
@@ -50,15 +50,6 @@ api = [
     "uvicorn~=0.38.0",
 ]
 
-worker = [
-    "celery~=5.6.0",
-    "psycopg2-binary~=2.9.1",
-    "redis~=7.1.0",
-    "scikit-learn~=1.7.2",
-    "sqlalchemy~=2.0.44",
-    "torch~=2.9.0",
-]
-
 docs = [
     "sphinx~=9.0.4",
 ]
@@ -69,7 +60,7 @@ test = [
 ]
 
 dev = [
-    "mlprod[test,notebook,api,worker,docs]",
+    "mlprod[notebook,node,test,docs]",
     "ruff>=0.14.0",
     "pre-commit>=4.5.0",
     "mypy>=1.19.0",

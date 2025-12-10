@@ -1,7 +1,7 @@
 import numpy as np
 
-from MLProd.api.requests import LocationData, UserData
-from MLProd.data.configs import UserConfig
+from mlprod.api.requests import LocationData, UserData
+from mlprod.data.configs import UserConfig
 
 
 class UserLabeller:

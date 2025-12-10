@@ -1,9 +1,9 @@
 import numpy as np
 import pandas as pd
 
-from MLProd.api.requests import LocationData
-from MLProd.data.configs import LocationConfig
-from MLProd.data.utils import sample_bool, sample_float
+from mlprod.api.requests import LocationData
+from mlprod.data.configs import LocationConfig
+from mlprod.data.utils import sample_bool, sample_float
 
 from pathlib import Path
 

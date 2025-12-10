@@ -9,7 +9,7 @@ from sklearn.metrics import (
 )
 from sklearn.preprocessing import MinMaxScaler
 
-from MLProd.worker.models.model import Model
+from mlprod.worker.models.model import Model
 
 import torch
 import torch.nn as nn

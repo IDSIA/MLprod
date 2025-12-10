@@ -1,5 +1,5 @@
-from MLProd.api.requests import LocationData, UserData
-from MLProd.data import read_user_config, generate_user_data, UserLabeller, UserConfig
+from mlprod.api.requests import LocationData, UserData
+from mlprod.data import read_user_config, generate_user_data, UserLabeller, UserConfig
 
 from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict

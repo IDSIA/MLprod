@@ -2,14 +2,14 @@ from celery.result import AsyncResult
 from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session
 
-from MLProd.api.middleware.metrics import PrometheusMiddleware, metrics_route
-from MLProd.api import requests
+from mlprod.api.middleware.metrics import PrometheusMiddleware, metrics_route
+from mlprod.api import requests
 
-from MLProd.database.database import SessionLocal
-from MLProd.database import crud, startup
+from mlprod.database.database import SessionLocal
+from mlprod.database import crud, startup
 
-from MLProd.worker.tasks.inference import inference
-from MLProd.worker.tasks.train import training
+from mlprod.worker.tasks.inference import inference
+from mlprod.worker.tasks.train import training
 
 import uvicorn
 

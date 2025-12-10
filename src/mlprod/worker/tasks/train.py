@@ -1,8 +1,8 @@
-from MLProd.database.database import SessionLocal
-from MLProd.database import crud
+from mlprod.database.database import SessionLocal
+from mlprod.database import crud
 
-from MLProd.worker.celery import worker
-from MLProd.worker.models import Model, train_model, evaluate
+from mlprod.worker.celery import worker
+from mlprod.worker.models import Model, train_model, evaluate
 
 from celery import Task
 from datetime import datetime
