@@ -21,6 +21,6 @@ __pycache__
 
 workbench.py
 
-!config/**
+!configs/**
 models/**
 !models/*.md

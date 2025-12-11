@@ -27,11 +27,11 @@ datasources:
     uid: zNqkUPk4k
     url: ${DS_POSTGRES_URL}:${DS_POSTGRES_PORT}
     user: ${DS_POSTGRES_USER}
-    database: ${DS_POSTGRES_DB}
     basicAuth: false
     isDefault: false
     readOnly: false
     jsonData:
+      database: ${DS_POSTGRES_DB}
       postgresVersion: 903
       sslmode: disable
       tlsAuth: false

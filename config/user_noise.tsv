@@ -1,3 +1,0 @@
-meta_comment	meta_dist	people_min	people_max	age_min	age_max	minor_age	budget_min	budget_max	nights_min	nights_max	spa_thr	pool_thr	pet_friendly_thr	lakes_thr	mountains_thr	sport_thr	budget_tolerance	facilities_tolerance	environment_tolerance	family_tolerance	weight_spa	weight_pool	weight_pet	weight_lake	weight_mouintains	weight_sport	weight_score_facilities	weight_score_envirnonment	weight_score_users	exploration_tolerance	ignore_tolerance
-Noisy groups	10	15	20	65	80	0	10000	20000	3	5	0	0	0.99	0.99	0	0	1.2	0.1	0.1	1.0	1.0	1.0	1.0	0.9	0.8	0.1	0.2	0.5	0.8	0.4	0.8
-
