@@ -2,6 +2,7 @@ from typing import Self
 
 from mlprod.api.requests import LocationData, UserData
 from mlprod.data import read_user_config, generate_user_data, UserLabeller, UserConfig
+from mlprod.logs import setup_logs
 
 from pathlib import Path
 from pydantic import model_validator
@@ -15,11 +16,9 @@ import os
 import requests
 import signal
 
+setup_logs()
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(name)s %(levelname)5s %(message)s",
-)
+LOGGER = logging.getLogger("mlprod.traffic_generator")
 
 
 class Config(BaseSettings):
@@ -129,7 +128,7 @@ class TrafficGenerator(multiprocessing.Process):
 
         time = self.t_min + self.random.beta(self.a, self.b) * (self.t_max - self.t_min)
 
-        logging.info(f"{self.thread:02} Sleeping for {time * 1000:.0f}ms")
+        LOGGER.info(f"{self.thread:02} Sleeping for {time * 1000:.0f}ms")
         sleep(time)
 
     def inference_start(self, user: UserData) -> str:
@@ -218,7 +217,7 @@ class TrafficGenerator(multiprocessing.Process):
                 x = r.choice(np.arange(len(self.user_configs)))
                 user_config: UserConfig = self.user_configs[x]
 
-                logging.info(f"{thread:02} User: {user_config.meta_comment}")
+                LOGGER.info(f"{thread:02} User: {user_config.meta_comment}")
 
                 self.sleep()
 
@@ -230,7 +229,7 @@ class TrafficGenerator(multiprocessing.Process):
                 # send new inference request ------------------------------
                 task_id = self.inference_start(user)
 
-                logging.info(f"{thread:02} Task id assigned: {task_id}")
+                LOGGER.info(f"{thread:02} Task id assigned: {task_id}")
 
                 # send task get request -----------------------------------
                 done = False
@@ -238,7 +237,7 @@ class TrafficGenerator(multiprocessing.Process):
                     self.sleep()
                     status = self.inference_status(task_id)
 
-                    logging.info(f"{thread:02} Request status: {status}")
+                    LOGGER.info(f"{thread:02} Request status: {status}")
                     done = status == "SUCCESS"
 
                 locations = self.inference_results(task_id)
@@ -253,17 +252,17 @@ class TrafficGenerator(multiprocessing.Process):
                         )
                         location_id = int(r.choice(location_ids[labels == 1]))
 
-                    logging.info(f"{thread:02} Chosen location with id {location_id}")
+                    LOGGER.info(f"{thread:02} Chosen location with id {location_id}")
 
                 # Register choice -----------------------------------------
                 self.sleep()
                 self.make_choice(task_id, location_id)
 
             except ValueError as e:
-                logging.error(f"Request failed: {e}")
+                LOGGER.error(f"Request failed: {e}")
                 self.sleep()
 
-        logging.info(f"{self.thread:02} completed")
+        LOGGER.info(f"{self.thread:02} completed")
 
 
 if __name__ == "__main__":
@@ -287,7 +286,7 @@ if __name__ == "__main__":
     def main_signal_handler(signum, frame):
         """This handler is used to gracefully stop the threads when ctrl-c is hitted in the terminal."""
         if not event.is_set():
-            logging.info("Received stop signal")
+            LOGGER.info("Received stop signal")
             event.set()
 
     signal.signal(signal.SIGINT, main_signal_handler)
@@ -311,7 +310,7 @@ if __name__ == "__main__":
         for i in range(n_workers)
     ]
 
-    logging.info(f"Starting traffic generation with {n_workers} worker(s)")
+    LOGGER.info(f"Starting traffic generation with {n_workers} worker(s)")
 
     for w in workers:
         w.start()

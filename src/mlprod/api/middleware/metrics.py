@@ -18,7 +18,10 @@ from prometheus_client import Counter, Histogram
 
 from time import time
 
+import logging
 import os
+
+LOGGER = logging.getLogger("mlprod.api.middleware.metrics")
 
 
 class PrometheusMiddleware(BaseHTTPMiddleware):
@@ -30,6 +33,7 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
         app_name: str = "ASGIApp",
         skip_paths: list[str] = ["/metrics", "/docs", "/favicon.ico"],
     ) -> None:
+        """Constructor."""
         super().__init__(app)
         labels = ["method", "path", "status_code", "app_name"]
 
@@ -57,12 +61,14 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
     async def dispatch(
         self, request: Request, call_next: RequestResponseEndpoint
     ) -> Response:
+        """Dispatch function that process each request."""
         path = request.url.path
 
         if path in self.skip_paths:
             try:
                 return await call_next(request)
             except Exception as e:
+                LOGGER.exception("Exception on skipped path: %s", path)
                 raise e
 
         # all paths have 3 slash then an id, here we clean the path from the id
@@ -83,6 +89,9 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
             # track exceptions
             self.request_exception.labels(
                 method=method, path=path, app_name=self.app_name, exception=str(e)
+            )
+            LOGGER.exception(
+                f"Exception on path={path} method={method} app={self.app_name}: {str(e)}"
             )
             raise e
 

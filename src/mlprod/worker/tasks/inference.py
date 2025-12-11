@@ -1,14 +1,15 @@
 from celery import Task
 from pathlib import Path
 
-from mlprod.database.database import SessionLocal
-from mlprod.database import crud
-
+from mlprod.database import DataBase, crud
 from mlprod.worker.celery import worker
 from mlprod.worker.models import Model
 
 import pandas as pd
 import logging
+
+
+LOGGER = logging.getLogger("mlprod.worker.tasks.inference")
 
 
 class InferenceTask(Task):
@@ -17,12 +18,14 @@ class InferenceTask(Task):
     abstract = True
 
     def __init__(self) -> None:
+        """Initialize the InferenceTask."""
         super().__init__()
 
         self.model: Model | None = None
         self.path: Path | None = None
 
     def __call__(self, *args, **kwargs) -> None:
+        """Call the run method of the task."""
         return self.run(*args, **kwargs)
 
 
@@ -37,20 +40,18 @@ def inference(self: InferenceTask, user_id: int) -> None:
     :param user_id:
         ID of the new user
     """
-    try:
-        db = SessionLocal()
-
+    with DataBase().session() as session:
         # check if there is a new model to use
-        db_model = crud.get_active_model(db)
+        db_model = crud.get_active_model(session)
 
         if self.model is None or self.path != db_model.path:
-            logging.info(f"Reloading model from path {db_model.path}")
+            LOGGER.info(f"Reloading model from path {db_model.path}")
             self.path = db_model.path
             self.model = Model(self.path)
 
         # get data to process
-        user = crud.get_user(db, user_id)
-        locs = crud.get_locations(db)
+        user = crud.get_user(session, user_id)
+        locs = crud.get_locations(session)
 
         locs_id = [loc.location_id for loc in locs]
 
@@ -68,7 +69,4 @@ def inference(self: InferenceTask, user_id: int) -> None:
         df["task_id"] = str(self.request.id)
 
         # save task id, user_id, and scores to database
-        crud.create_results(db, df)
-
-    finally:
-        db.close()
+        crud.create_results(session, df)

@@ -20,6 +20,7 @@ import json
 import logging
 import numpy as np
 
+LOGGER = logging.getLogger("mlprod.worker.models.train")
 
 DEFAULT_MODELS_DIR = Path("./models")
 
@@ -71,7 +72,7 @@ def train_model(
 
     joblib.dump(mms, path_mms)
 
-    logging.info(f"training: MinMaxScaler saved to {path_mms}")
+    LOGGER.info(f"training: MinMaxScaler saved to {path_mms}")
 
     # Preprocessing: FeatureSelection -----------------------------------------
     skb = SelectKBest(chi2, k=k_best)
@@ -80,7 +81,7 @@ def train_model(
 
     joblib.dump(skb, path_skb)
 
-    logging.info(f"training: SelectKBest saved to {path_skb}")
+    LOGGER.info(f"training: SelectKBest saved to {path_skb}")
 
     # Training: setup ---------------------------------------------------------
     if X.shape is None:
@@ -91,7 +92,7 @@ def train_model(
     batch_count = int(n / batch_size)
     r = np.random.default_rng(random_state)
 
-    logging.info(f"training: creating model with input {x_output}")
+    LOGGER.info(f"training: creating model with input {x_output}")
 
     model = Model(x_output).to("cpu")
 
@@ -116,7 +117,7 @@ def train_model(
     batch1_size = min(n, int(batch_size * frac1))
 
     for epoch in range(epochs):
-        logging.info(f"training: epoch {epoch}/{epochs}")
+        LOGGER.info(f"training: epoch {epoch}/{epochs}")
 
         # train
         model.train()
@@ -146,7 +147,7 @@ def train_model(
             y_preds.append(out.detach().numpy())
             y_trues.append(y_tr)
 
-    logging.info("training: completed")
+    LOGGER.info("training: completed")
 
     y_preds = np.array(y_preds).reshape(-1)
     y_trues = np.array(y_trues).reshape(-1)
@@ -160,11 +161,11 @@ def train_model(
     metrics = metrics | evaluate(y_trues, y_preds, metrics_list)
 
     for k, v in metrics.items():
-        logging.info(f"train metric {k}: {v:.4}")
+        LOGGER.info(f"train metric {k}: {v:.4}")
 
     torch.save(model.state_dict(), path_model)
 
-    logging.info(f"training: model saved to {path_model}")
+    LOGGER.info(f"training: model saved to {path_model}")
 
     with open(path_metadata, "w+") as f:
         json.dump(
@@ -179,7 +180,7 @@ def train_model(
             indent=4,
         )
 
-    logging.info(f"training: metadata saved to {path_metadata}")
+    LOGGER.info(f"training: metadata saved to {path_metadata}")
 
     return metrics
 

@@ -1,54 +1,59 @@
-from .tables import User, Location, Dataset, Inference, Result, Event, Model
 from .crud import count_locations, count_models, create_model
+from .database import DataBase
+from .tables import Base
+from .tables import Location
 
 from pathlib import Path
-from sqlalchemy.orm import Session
 
+import logging
 import numpy as np
 import pandas as pd
 
-ROOT = Path("/")
+LOGGER = logging.getLogger("mlprod.database.startup")
 
 
-def init_content(db: Session):
-    """Initialize all the tables in the database, if they do not exists.
+def init_content() -> None:
+    """Initialize all the tables in the database, if they do not exists."""
+    LOGGER.info("server startup procedure started")
 
-    :param db:
-        Session with the connection to the database.
-    """
-    engine = db.get_bind()
+    try:
+        db = DataBase()
 
-    User.__table__.create(bind=engine, checkfirst=True)
-    Location.__table__.create(bind=engine, checkfirst=True)
+        with db.engine.begin() as conn:
+            LOGGER.info("database creation started")
+            Base.metadata.create_all(conn, checkfirst=True)
+            LOGGER.info("database creation completed")
 
-    Inference.__table__.create(bind=engine, checkfirst=True)
-    Result.__table__.create(bind=engine, checkfirst=True)
+        with db.session() as session:
+            n_locations = count_locations(session)
 
-    Event.__table__.create(bind=engine, checkfirst=True)
+            if n_locations == 0:
+                LOGGER.info(
+                    "no locations found in database, "
+                    "populating from dataset_locations.tsv file"
+                )
 
-    Dataset.__table__.create(bind=engine, checkfirst=True)
-    Model.__table__.create(bind=engine, checkfirst=True)
+                df = pd.read_csv("./data/dataset_locations.tsv", sep="\t")
+                df["id"] = np.arange(df.shape[0])
 
-    n_locations = count_locations(db)
+                session.bulk_insert_mappings(Location, df.to_dict(orient="records"))  # type: ignore
+                session.commit()
 
-    if n_locations == 0:
-        # if not populated, add data
-        df = pd.read_csv("./data/dataset_locations.tsv", sep="\t")
-        df["id"] = np.arange(df.shape[0])
+            n_models = count_models(session)
 
-        db.bulk_insert_mappings(Location, df.to_dict(orient="records"))  # type: ignore
-        db.commit()
+            if n_models == 0:
+                LOGGER.info("no models found in database, adding baseline model")
 
-    n_models = count_models(db)
+                create_model(
+                    session,
+                    "baseline_model",
+                    "SUCCESS",
+                    path=Path("/") / "app" / "models" / "original",
+                    use_percentage=1.0,
+                )
 
-    if n_models == 0:
-        # if no models is available, add the baseline model
-        create_model(
-            db,
-            "baseline_model",
-            "SUCCESS",
-            path=ROOT / "app" / "models" / "original",
-            use_percentage=1.0,
-        )
+            session.close()
 
-    db.close()
+    except Exception as e:
+        LOGGER.error("Error during database initialization")
+        LOGGER.exception(e)

@@ -1,11 +1,15 @@
 import numpy as np
 import pandas as pd
 
+from datetime import datetime
 from pathlib import Path
 from sqlalchemy.orm import Session
 
-from datetime import datetime
 from .tables import Dataset, Location, Inference, Event, Result, User, Model
+
+import logging
+
+LOGGER = logging.getLogger("mlprod.database.crud")
 
 
 def create_user_data(db: Session, user_data: dict) -> User:
@@ -26,6 +30,8 @@ def create_user_data(db: Session, user_data: dict) -> User:
 
     del data["people_age"]
 
+    LOGGER.debug(f"Creating user with data: {data}")
+
     db_user = User(**data)
     db.add(db_user)
     db.commit()
@@ -43,6 +49,8 @@ def create_inference(db: Session, task_id: str, status: str) -> Inference:
     :param status:
         Inirial status for this task.
     """
+    LOGGER.debug(f"Creating inference task_id={task_id}, status={status}")
+
     db_pred = Inference(task_id=task_id, status=status)
     db.add(db_pred)
     db.commit()
@@ -58,7 +66,13 @@ def get_inference(db: Session, task_id: str) -> Inference:
     :param task_id:
         The id associated to the task.
     """
-    return db.query(Inference).filter(Inference.task_id == task_id).first()
+    r = db.query(Inference).filter(Inference.task_id == task_id).first()
+
+    if r is None:
+        LOGGER.error(f"Inference with task_id {task_id} not found!")
+        raise ValueError(f"Inference with task_id {task_id} not found!")
+
+    return r
 
 
 def update_inference(db: Session, task_id: str, status: str) -> Inference:
@@ -72,8 +86,11 @@ def update_inference(db: Session, task_id: str, status: str) -> Inference:
         New status to assign to the given task id.
     """
     db_pred = get_inference(db, task_id)
+
     db_pred.time_get = datetime.now()
     db_pred.status = status
+
+    LOGGER.debug(f"Updating inference task_id={task_id}, status={status}")
 
     db.commit()
     db.refresh(db_pred)
@@ -91,6 +108,8 @@ def create_results(db: Session, df: pd.DataFrame) -> list[Result]:
         A dataframe with the columns 'user_id', 'location_id', 'score', and
         'task_id'.
     """
+    LOGGER.debug(f"Creating results from dataframe with shape {df.shape}")
+
     db_results = []
     for _, row in df.iterrows():
         result = Result(
@@ -124,6 +143,8 @@ def get_results_locations(db: Session, task_id: str, limit: int = 10) -> list[di
     :param limit:
         Limit the results with this parameter.
     """
+    LOGGER.debug(f"Getting results locations for task_id={task_id} with limit={limit}")
+
     db_results = (
         db.query(Result)
         .filter(Result.task_id == task_id)
@@ -172,6 +193,8 @@ def mark_locations_as_shown(db: Session, task_id: str, locations: list[dict]) ->
     :param locations:
         List of the location ids that need to be marked.
     """
+    LOGGER.debug(f"Marking locations as shown for task_id={task_id}")
+
     loc_ids = [location["location_id"] for location in locations]
 
     db.query(Result).filter(Result.task_id == task_id).filter(
@@ -188,7 +211,13 @@ def get_results(db: Session, task_id: int) -> list[Result]:
 
 def get_result(db: Session, result_id: int) -> Result:
     """Get result with the given result_id."""
-    return db.query(Result).filter(Result.result_id == result_id).first()
+    r = db.query(Result).filter(Result.result_id == result_id).first()
+
+    if r is None:
+        LOGGER.error(f"Result with result_id {result_id} not found!")
+        raise ValueError(f"Result with result_id {result_id} not found!")
+
+    return r
 
 
 def update_result_label(db: Session, task_id: str, location_id: int) -> Result | None:
@@ -209,6 +238,9 @@ def update_result_label(db: Session, task_id: str, location_id: int) -> Result |
     )
 
     if db_result is None:
+        LOGGER.warning(
+            f"Result not found for task_id={task_id} and location_id={location_id}"
+        )
         return None
 
     db_result.label = 1
@@ -230,6 +262,8 @@ def create_dataset(db: Session, task_id: str, size: int) -> pd.DataFrame:
     :param size:
         Size of the dataset.
     """
+    LOGGER.debug(f"Creating dataset for task_id={task_id} with size={size}")
+
     query = (
         db.query(Result, Location, User)
         .filter(Result.shown)
@@ -242,6 +276,7 @@ def create_dataset(db: Session, task_id: str, size: int) -> pd.DataFrame:
     bind = db.bind
 
     if bind is None:
+        LOGGER.error("Database not available!")
         raise ValueError("Database not available!")
 
     df = pd.read_sql(query.statement, bind)
@@ -277,6 +312,9 @@ def create_model(
     :param use_percentage:
         Percentage of usage for this model.
     """
+    LOGGER.debug(
+        f"Creating model task_id={task_id}, status={status}, path={path}, use_percentage={use_percentage}"
+    )
     args = {
         "task_id": task_id,
         "use_percentage": use_percentage,
@@ -319,6 +357,9 @@ def update_model(
     :param use_percentage:
         Percentage of usage for this model.
     """
+    LOGGER.debug(
+        f"Updating model task_id={task_id}, status={status}, path={path}, use_percentage={use_percentage}, metrics={metrics}"
+    )
     upd_data = dict()
 
     if path is not None:
@@ -351,7 +392,13 @@ def get_active_model(db: Session) -> Model:
         Session with the connection to the database.
     """
     # TODO: this should return a list of models, then who call it choose what to load
-    return db.query(Model).filter(Model.use_percentage > 0).first()
+    r = db.query(Model).filter(Model.use_percentage > 0).first()
+
+    if r is None:
+        LOGGER.error("No active model found!")
+        raise ValueError("No active model found!")
+
+    return r
 
 
 def count_models(db: Session) -> int:
@@ -368,6 +415,8 @@ def create_event(db: Session, event: str) -> Event:
         Event to be registered in the database. Technically, it is a string field,
         avoid typos and put single words.
     """
+    LOGGER.debug(f"Creating event: {event}")
+
     db_event = Event(event=event)
     db.add(db_event)
     db.commit()
@@ -377,7 +426,13 @@ def create_event(db: Session, event: str) -> Event:
 
 def get_location(db: Session, id: int) -> Location:
     """Fetch a location by its ID."""
-    return db.query(Location).filter(Location.location_id == id).first()
+    r = db.query(Location).filter(Location.location_id == id).first()
+
+    if r is None:
+        LOGGER.error(f"Location with id {id} not found!")
+        raise ValueError(f"Location with id {id} not found!")
+
+    return r
 
 
 def get_locations(db: Session, limit: int = 0) -> list[Location]:
@@ -398,7 +453,13 @@ def count_locations(db: Session) -> int:
 
 def get_user(db: Session, id: int) -> User:
     """Return the user with the given ID."""
-    return db.query(User).filter(User.user_id == id).first()
+    r = db.query(User).filter(User.user_id == id).first()
+
+    if r is None:
+        LOGGER.debug(f"User with id {id} not found!")
+        raise ValueError(f"User with id {id} not found!")
+
+    return r
 
 
 def get_users(db: Session) -> list[User]:

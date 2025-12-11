@@ -30,7 +30,11 @@ COPY --from=builder /opt/venv /opt/venv
 
 WORKDIR /app
 
+COPY configs/ configs/
 COPY models/ models/
 COPY data/ data/
+
+# Ensure unbuffered output
+ENV PYTHONUNBUFFERED=1
 
 CMD ["celery", "-A", "mlprod.worker.celery", "worker", "-l", "INFO"]

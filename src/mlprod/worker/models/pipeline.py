@@ -11,6 +11,8 @@ import json
 import joblib
 import os
 
+LOGGER = logging.getLogger("mlprod.worker.models.pipeline")
+
 FILE_METADATA: str = "metadata.json"
 FILE_MMS: str = "mms.model"
 FILE_SKB: str = "skb.model"
@@ -42,7 +44,7 @@ class PipelineModel:
 
         self.path: Path = path
 
-        logging.info(f"loading model from path {self.path}")
+        LOGGER.info(f"loading model from path {self.path}")
 
         # path setup
         self.path_metadata: str = str(os.path.join(self.path, FILE_METADATA))
@@ -50,25 +52,25 @@ class PipelineModel:
         self.path_skb: str = str(os.path.join(self.path, FILE_SKB))
         self.path_model: str = str(os.path.join(self.path, FILE_MODEL))
 
-        logging.info(f"Load metadata from {self.path_metadata}")
+        LOGGER.info(f"Load metadata from {self.path_metadata}")
 
         # files loading
         with open(self.path_metadata, "r") as f:
             self.metadata: dict = json.load(f)
 
         # pre-processing model creation
-        logging.info(f"Loading pre-process models from {self.path_mms} {self.path_skb}")
+        LOGGER.info(f"Loading pre-process models from {self.path_mms} {self.path_skb}")
 
         self.mms: MinMaxScaler = joblib.load(self.path_mms)
         self.skb: SelectKBest = joblib.load(self.path_skb)
 
-        logging.info(f"Loading model from {self.path_model}")
+        LOGGER.info(f"Loading model from {self.path_model}")
 
         nn_state_dict = torch.load(self.path_model)
         self.model: Model = Model(self.metadata["x_output"])
         self.model.load_state_dict(nn_state_dict)
 
-        logging.info("All artifacts loaded")
+        LOGGER.info("All artifacts loaded")
 
     def __call__(self, x: np.ndarray) -> np.ndarray:
         """Applies the pipeline to the input data.
