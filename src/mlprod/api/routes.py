@@ -9,6 +9,7 @@ from mlprod.database import crud, init_content, get_session, DataBase
 from mlprod.logs import setup_logs
 from mlprod.worker.tasks.inference import inference
 from mlprod.worker.tasks.train import training
+from mlprod import __version__
 
 import logging
 
@@ -27,7 +28,11 @@ async def lifespan(app: FastAPI):
 
 def init_api() -> FastAPI:
     """Initialize the FastAPI app with routes and middleware."""
-    api = FastAPI(lifespan=lifespan)
+    api = FastAPI(
+        title="MLprod API",
+        version=__version__,
+        lifespan=lifespan,
+    )
 
     api.add_middleware(PrometheusMiddleware)
     api.add_route("/metrics", metrics_route)
@@ -71,7 +76,7 @@ async def schedule_inference(
         LOGGER.error("Invalid task id returned from inference task")
         raise HTTPException(500, "Invalid task id")
 
-    db_inf = crud.create_inference(db, task.task_id, task.status)
+    db_inf = crud.create_inference(db, task.task_id, task.status, ud.user_id)
     status = requests.TaskStatus(
         task_id=db_inf.task_id, status=db_inf.status, type="inference"
     )

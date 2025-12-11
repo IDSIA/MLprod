@@ -47,6 +47,7 @@ class User(Base):
     creation_time: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=now()
     )
+    name: Mapped[str] = mapped_column(nullable=False)
     people_num: Mapped[int] = mapped_column(nullable=False)
     children_num: Mapped[int] = mapped_column(nullable=False)
     age_avg: Mapped[float] = mapped_column(nullable=False)
@@ -108,8 +109,12 @@ class Inference(Base):
     time_creation: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=now()
     )
-    time_get: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=None)
-    time_update: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=None)
+    time_get: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=None, nullable=True
+    )
+    time_update: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=None, nullable=True
+    )
     user_id: Mapped[int] = mapped_column(ForeignKey("users.user_id"))
     status: Mapped[str] = mapped_column(default="")
 

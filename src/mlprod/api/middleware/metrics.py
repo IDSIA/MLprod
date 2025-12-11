@@ -87,11 +87,11 @@ class PrometheusMiddleware(BaseHTTPMiddleware):
             status_code = response.status_code
         except Exception as e:
             # track exceptions
-            self.request_exception.labels(
-                method=method, path=path, app_name=self.app_name, exception=str(e)
-            )
             LOGGER.exception(
                 f"Exception on path={path} method={method} app={self.app_name}: {str(e)}"
+            )
+            self.request_exception.labels(
+                method=method, path=path, app_name=self.app_name, exception=str(e)
             )
             raise e
 

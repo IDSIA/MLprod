@@ -23,10 +23,10 @@ def create_user_data(db: Session, user_data: dict) -> User:
     data = dict() | user_data
     ages = np.array(data["people_age"], dtype="float")
 
-    data["age_avg"] = ages.mean()
-    data["age_std"] = ages.std()
-    data["age_min"] = ages.min()
-    data["age_max"] = ages.max()
+    data["age_avg"] = ages.mean().item()
+    data["age_std"] = ages.std().item()
+    data["age_min"] = ages.min().item()
+    data["age_max"] = ages.max().item()
 
     del data["people_age"]
 
@@ -39,7 +39,7 @@ def create_user_data(db: Session, user_data: dict) -> User:
     return db_user
 
 
-def create_inference(db: Session, task_id: str, status: str) -> Inference:
+def create_inference(db: Session, task_id: str, status: str, user_id: int) -> Inference:
     """Insert a new inference in the database.
 
     :param db:
@@ -51,7 +51,7 @@ def create_inference(db: Session, task_id: str, status: str) -> Inference:
     """
     LOGGER.debug(f"Creating inference task_id={task_id}, status={status}")
 
-    db_pred = Inference(task_id=task_id, status=status)
+    db_pred = Inference(task_id=task_id, status=status, user_id=user_id)
     db.add(db_pred)
     db.commit()
     db.refresh(db_pred)
